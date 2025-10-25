@@ -223,11 +223,11 @@ The UI is fully navigable with keyboard shortcuts (e.g., j/k to navigate questio
 If you find this tool useful, please consider supporting its development. Your support helps cover API costs, encourages further development, and allows me to dedicate more time to improving it. Thank you!
 
 <p align="center">
-<a href="https://github.com/sponsors/iluxu" target="_blank">
+<a href="https://github.com/sponsors/jcmd13" target="_blank">
 <img src="https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86" alt="Sponsor on GitHub">
 </a>
 &nbsp;&nbsp;
-<a href="https://www.buymeacoffee.com/iluxu" target="_blank">
+<a href="https://www.buymeacoffee.com/jcmd13" target="_blank">
 <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="28">
 </a>
 </p>
@@ -325,16 +325,6 @@ LLM_CONTEXT_MODE = "full"  # Context mode: "full", "window", or "headtail"
 MAX_OUTTOK = 400  # Maximum output tokens
 PERSONA = "candidate"  # Response persona
 ```
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the project
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
 
 ## 📝 License
 
