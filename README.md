@@ -1,22 +1,36 @@
 # Trotski - Real-Time AI Interview Assistant
 
-This project provides a high-performance, real-time audio transcription and AI-powered answering server. It uses faster-whisper for low-latency STT (Speech-to-Text) and an LLM (like GPT models) to intelligently detect questions from the transcript and generate relevant, in-character answers on the fly.
+This project provides a high-performance, real-time audio transcription and AI-powered answering server. It uses faster-whisper for low-latency STT (Speech-to-Text) and Ollama with cloud models to intelligently detect questions from the transcript and generate relevant, contextual answers on the fly.
 
 The system is composed of three main parts:
 
-- **The Server** (`optimized_stt_server_v3.py`): A WebSocket server that receives raw audio, transcribes it, analyzes the text for questions, and generates answers.
+- **The Server** (`optimized_stt_server_v3.py`): A WebSocket server that receives raw audio, transcribes it, analyzes the text for questions, and generates answers using Ollama.
 - **The Client** (`stable_audio_client_multi_os.py`): A robust, multi-platform audio streaming client that captures microphone input using FFmpeg and streams it to the server.
 - **The UI** (`index.html`): A standalone, zero-dependency web interface that connects to the server to display the live transcript and Q&A panel.
+
+## 🔒 Why Ollama?
+
+This project has been updated to use **Ollama** instead of OpenAI for several key advantages:
+
+- **🔐 Privacy**: All processing can be done locally - your conversations never leave your machine
+- **💰 Cost-Effective**: No API costs or usage limits
+- **🚀 Performance**: Local models provide consistent, fast responses without network latency
+- **🔧 Flexibility**: Easy to switch between different models based on your needs
+- **📶 Offline Capable**: Works without internet connection (except for cloud models)
+- **🎯 Customizable**: Fine-tune responses by adjusting model parameters and prompts
 
 ## ✨ Features
 
 - **Real-Time Transcription**: Low-latency audio transcription using faster-whisper
 - **Intelligent Question Detection**: An LLM-powered analyzer detects questions from the live transcript
 - **AI-Powered Answer Generation**: Generates context-aware, in-character answers for detected questions
+- **Ollama Integration**: Uses local Ollama with cloud models - no API keys required!
+- **Privacy-Focused**: All processing can be done locally with Ollama models
+- **Contextual Awareness**: Maintains conversation context for more relevant responses
 - **Standalone Web UI**: A feature-rich, single-file `index.html` dashboard to monitor the interview
 - **Multi-Platform Support**: The server and client run on Windows, macOS, and Linux
 - **Robust & Stable**: Includes automatic reconnection, backpressure handling, and stable connection parameters
-- **Highly Configurable**: Nearly every aspect can be configured via environment variables
+- **Highly Configurable**: Nearly every aspect can be configured directly in the code
 
 ## 📋 Prerequisites
 
@@ -38,10 +52,43 @@ For significant performance gains with the Whisper model.
 - Install the [CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit) (v11.x is compatible)
 - Install [cuDNN](https://developer.nvidia.com/cudnn)
 
-### OpenAI API Key
-Required for question detection and answer generation.
+### Ollama
+Required for question detection and answer generation using local or cloud models.
 
-## 🚀 Installation
+- Install Ollama from [ollama.ai](https://ollama.ai/)
+- Start the Ollama service: `ollama serve`
+- Pull the required model: `ollama pull gpt-oss:120b-cloud` (or your preferred model)
+
+## ⚡ Quick Start
+
+For the impatient - get running in 5 minutes:
+
+```bash
+# 1. Install Ollama
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# 2. Start Ollama and pull model
+ollama serve &
+ollama pull gpt-oss:120b-cloud
+
+# 3. Clone and setup
+git clone https://github.com/jcmd13/Interview_Assistant.git
+cd Interview_Assistant
+python -m venv venv
+source venv/bin/activate  # or .\venv\Scripts\activate on Windows
+pip install -r requirements.txt
+
+# 4. Run the server
+python optimized_stt_server_v3.py
+
+# 5. Open index.html in your browser
+
+# 6. Find your microphone and start streaming
+python stable_audio_client_multi_os.py --list-devices
+python stable_audio_client_multi_os.py --device "YOUR_DEVICE_NAME"
+```
+
+## 🚀 Detailed Installation
 
 ### 1. Clone the Repository
 
@@ -70,25 +117,27 @@ Create a `requirements.txt` file with the content specified below and run:
 pip install -r requirements.txt
 ```
 
-**CPU-Only Note**: If you don't have an NVIDIA GPU, first install the CPU version of PyTorch:
+**CPU-Only Note**: The requirements.txt is already configured for CPU-only PyTorch. If you have an NVIDIA GPU and want to use CUDA acceleration, replace the torch installation lines with:
 ```bash
-pip install torch --index-url https://download.pytorch.org/whl/cpu
-```
-Then run `pip install -r requirements.txt`.
-
-### 4. Set Up Environment Variables
-
-Create a `.env` file by copying the example:
-
-```bash
-# On Windows
-copy .env.example .env
-
-# On macOS/Linux
-cp .env.example .env
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 ```
 
-Now, edit the `.env` file and add your `OPENAI_API_KEY`. See the `.env.example` section for all options.
+### 4. Set Up Ollama
+
+Make sure Ollama is running and has the required model:
+
+```bash
+# Start Ollama service (if not already running)
+ollama serve
+
+# Pull the cloud model (in another terminal)
+ollama pull gpt-oss:120b-cloud
+
+# Verify the model is available
+ollama list
+```
+
+The server is pre-configured to use Ollama with the `gpt-oss:120b-cloud` model. You can modify the model in `optimized_stt_server_v3.py` if needed.
 
 ## ⚙️ Usage
 
@@ -203,35 +252,78 @@ If you find this tool useful, please consider supporting its development. Your s
 - Ensure your user is in the `audio` group: `sudo usermod -a -G audio $USER`
 - For better performance, consider using `pipewire` instead of `pulseaudio`
 
-## 📄 .env.example
+## 🔧 Ollama Setup & Troubleshooting
 
-```env
-# OpenAI API Configuration
-OPENAI_API_KEY=your_openai_api_key_here
-OPENAI_MODEL=gpt-5-nano
-OPENAI_MAX_TOKENS=150
-OPENAI_TEMPERATURE=0.7
+### Installation
+```bash
+# Install Ollama (visit ollama.ai for platform-specific instructions)
+curl -fsSL https://ollama.ai/install.sh | sh
 
-# Server Configuration
-SERVER_HOST=127.0.0.1
-SERVER_PORT=8123
+# Start Ollama service
+ollama serve
 
-# Whisper Configuration
-WHISPER_MODEL=base
-WHISPER_DEVICE=auto
-WHISPER_COMPUTE_TYPE=float16
+# Pull the cloud model
+ollama pull gpt-oss:120b-cloud
+```
 
-# Audio Configuration
-SAMPLE_RATE=16000
-CHANNELS=1
-CHUNK_DURATION_MS=1000
+### Common Issues
 
-# Question Detection
-MIN_QUESTION_LENGTH=10
-QUESTION_DETECTION_ENABLED=true
+**"Ollama not accessible" error:**
+- Make sure Ollama is running: `ollama serve`
+- Check if the service is listening: `curl http://localhost:11434/api/version`
+- Verify the model is available: `ollama list`
 
-# Logging
-LOG_LEVEL=INFO
+**Model not found:**
+- Pull the required model: `ollama pull gpt-oss:120b-cloud`
+- You can use alternative models by changing `OLLAMA_MODEL_CLOUD` in the server code
+
+**Performance Issues:**
+- For faster responses, try smaller models like `phi3.5:3.8b` or `llama3.2:1b`
+- Adjust `MAX_CONCURRENT_LLM` in the server configuration
+- Consider using GPU acceleration if available
+
+### Model Recommendations
+- **Fast & Lightweight**: `phi3.5:3.8b`, `llama3.2:1b`, `qwen2.5:1.5b`
+- **Balanced**: `gemma2:2b`, `mistral`
+- **High Quality**: `gpt-oss:120b-cloud` (cloud model, requires internet)
+
+## ⚙️ Configuration
+
+The server is pre-configured with optimal settings. You can either:
+
+1. **Use defaults**: Everything works out of the box with Ollama
+2. **Customize settings**: Modify the configuration directly in `optimized_stt_server_v3.py`
+3. **Environment variables**: Copy `.env.example` to `.env` and uncomment settings you want to change
+
+### Key Configuration Options
+
+### LLM Configuration (Ollama)
+```python
+OLLAMA_MODEL = "gpt-oss:120b-cloud"  # Main cloud model
+OLLAMA_BASE_URL = "http://localhost:11434"  # Ollama server URL
+LLM_ENABLED = True  # Enable/disable LLM features
+```
+
+### Whisper Configuration
+```python
+MODEL_NAME = "tiny"  # Whisper model size (tiny, base, small, medium, large)
+COMPUTE_TYPE = "int8"  # Computation precision
+SAMPLE_RATE = 16000  # Audio sample rate
+```
+
+### Audio Processing
+```python
+WINDOW_SECONDS = 6.0  # Audio window size for processing
+HOP_SECONDS = 0.8  # Overlap between windows
+ENERGY_GATE = 1e-4  # Minimum energy threshold
+```
+
+### Advanced Settings
+```python
+TECH_INTERVIEW_MODE = True  # Optimize for technical interviews
+LLM_CONTEXT_MODE = "full"  # Context mode: "full", "window", or "headtail"
+MAX_OUTTOK = 400  # Maximum output tokens
+PERSONA = "candidate"  # Response persona
 ```
 
 ## 🤝 Contributing
@@ -250,6 +342,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- [OpenAI](https://openai.com/) for their powerful language models
+- [Ollama](https://ollama.ai/) for providing an excellent local LLM platform
 - [faster-whisper](https://github.com/guillaumekln/faster-whisper) for efficient speech recognition
 - [FFmpeg](https://ffmpeg.org/) for robust audio processing
+- The open-source AI community for making powerful models accessible

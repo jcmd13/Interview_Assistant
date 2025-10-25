@@ -1,14 +1,20 @@
 # requirements.txt
 
 # Core ML/AI Libraries
-# Installs PyTorch with CUDA 11.8 support. Adjust if you have a different CUDA version or no GPU.
-
+# PyTorch with CPU support (change to CUDA if you have GPU)
 torch --index-url https://download.pytorch.org/whl/cpu
 torchvision --index-url https://download.pytorch.org/whl/cpu
 torchaudio --index-url https://download.pytorch.org/whl/cpu
+
+# Speech Recognition
 faster-whisper
-openai
+
+# LLM Integration - Ollama
+ollama
 
 # Networking and Async
 websockets
 numpy
+
+# Audio Processing (if needed for additional features)
+# pyaudio  # Uncomment if you need direct audio device access
