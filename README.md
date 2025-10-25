@@ -1,4 +1,4 @@
-# Trotski - Real-Time AI Interview Assistant
+# Interview_Assistant - Real-Time AI Interview Assistant
 
 This project provides a high-performance, real-time audio transcription and AI-powered answering server. It uses faster-whisper for low-latency STT (Speech-to-Text) and Ollama with cloud models to intelligently detect questions from the transcript and generate relevant, contextual answers on the fly.
 
@@ -93,8 +93,8 @@ python stable_audio_client_multi_os.py --device "YOUR_DEVICE_NAME"
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/iluxu/Trotski.git
-cd Trotski
+git clone https://github.com/iluxu/Interview_Assistant.git
+cd Interview_Assistant
 ```
 
 ### 2. Create a Virtual Environment
