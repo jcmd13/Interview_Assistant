@@ -11,50 +11,55 @@ from faster_whisper import WhisperModel
 # ========================
 # Configuration
 # ========================
-HOST = os.getenv("STT_HOST", "127.0.0.1")
-PORT = int(os.getenv("STT_PORT", "8123"))
+HOST = "127.0.0.1"  # Hardcoded, removed os.getenv
+PORT = 8123  # Hardcoded, removed os.getenv
 
 SAMPLE_RATE = 16000
-WINDOW_SECONDS = float(os.getenv("STT_WINDOW_SECONDS", "6"))
-HOP_SECONDS = float(os.getenv("STT_HOP_SECONDS", "0.8"))
-ENERGY_GATE = float(os.getenv("STT_ENERGY_GATE", "1e-4"))
+WINDOW_SECONDS = 6.0  # Hardcoded, removed os.getenv
+HOP_SECONDS = 0.8  # Hardcoded, removed os.getenv
+ENERGY_GATE = 1e-4  # Hardcoded, removed os.getenv
 
-MODEL_NAME = os.getenv("STT_MODEL", "small")
-COMPUTE_TYPE = os.getenv("STT_COMPUTE", "int8")
-FORCE_LANG = os.getenv("STT_LANG") or None
+MODEL_NAME = "tiny"  # Hardcoded, removed os.getenv
+COMPUTE_TYPE = "int8"  # Hardcoded, removed os.getenv
+FORCE_LANG = None  # Hardcoded, removed os.getenv
 # Generic tech prompt for better transcription of jargon
-INITIAL_PROMPT = os.getenv(
-    "STT_INITIAL_PROMPT",
-    "Software engineering, data structures, algorithms, system design, cloud computing, AWS, Azure, GCP, microservices, API, "
-    "CI/CD, DevOps, machine learning, data science, Python, Java, JavaScript, SQL, NoSQL, product management, agile, scrum."
-)
+INITIAL_PROMPT = "Software engineering, data structures, algorithms, system design, cloud computing, AWS, Azure, GCP, microservices, API, CI/CD, DevOps, machine learning, data science, Python, Java, JavaScript, SQL, NoSQL, product management, agile, scrum, cloud security, SOC operations, incident response, SIEM, EDR, IAM, RBAC, zero trust."
 
-# LLM
-LLM_ENABLED = os.getenv("STT_LLM_ENABLED", "1") not in ("0", "false", "False")
-GPT_MODEL = os.getenv("STT_LLM_MODEL", "gpt-5-nano")
-GPT_EFFORT = os.getenv("STT_LLM_EFFORT", "low")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+# ========================
+# LLM Configuration - OLLAMA ONLY
+# ========================
+LLM_ENABLED = True  # Hardcoded to True
+OLLAMA_MODEL = "gpt-oss:120b-cloud"  #phi3.5:3.8b  #llama3.2 #qwen2.5:1.5b #llama3.2:1b #gemma2:2b #mistral
+OLLAMA_BASE_URL = "http://localhost:11434"  # Added for Ollama
+OLLAMA_MODEL_CLOUD = "gpt-oss:120b-cloud"
 
-# Advanced LLM Context Control (restored from French version)
-LLM_INCLUDE_FULL_TRANSCRIPT = os.getenv("STT_LLM_INCLUDE_FULL_TRANSCRIPT", "1") not in ("0", "false", "False")
-TECH_INTERVIEW_MODE = os.getenv("STT_TECH_INTERVIEW_MODE", "1") not in ("0", "false", "False")
-LLM_CONTEXT_MODE = os.getenv("STT_LLM_CONTEXT_MODE", "full").lower()
-LLM_WINDOW_LINES = int(os.getenv("STT_LLM_WINDOW_LINES", "160"))
-LLM_HEAD_LINES = int(os.getenv("STT_LLM_HEAD_LINES", "60"))
-LLM_TAIL_LINES = int(os.getenv("STT_LLM_TAIL_LINES", "300"))
-LLM_MAX_CONTEXT_CHARS = int(os.getenv("STT_LLM_MAX_CONTEXT_CHARS", "300000"))
-MAX_OUTTOK = int(os.getenv("STT_MAX_OUTTOK", "512"))
-PERSONA = os.getenv("STT_LLM_PERSONA", "candidate").lower()
+# ========================
+# Advanced LLM Context                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       ntext Control
+# ========================
+LLM_INCLUDE_FULL_TRANSCRIPT = True  # Hardcoded, removed os.getenv
+TECH_INTERVIEW_MODE = True  # Hardcoded, removed os.getenv
+LLM_CONTEXT_MODE = "full"  # Hardcoded, removed os.getenv
+LLM_WINDOW_LINES = 200  # Hardcoded, removed os.getenv
+LLM_HEAD_LINES = 80  # Hardcoded, removed os.getenv
+LLM_TAIL_LINES = 400  # Hardcoded, removed os.getenv
+LLM_MAX_CONTEXT_CHARS = 400000  # Hardcoded, removed os.getenv
+MAX_OUTTOK = 400  # Hardcoded, removed os.getenv
+PERSONA = "candidate"  # Hardcoded, removed os.getenv
 
+# ========================
 # LLM Rate Limiting
-LLM_MIN_GAP_SEC = float(os.getenv("STT_LLM_MIN_GAP_SEC", "1.0"))
-ANSWERS_PER_MIN = int(os.getenv("STT_LLM_ANSWERS_PER_MIN", "8"))
-SEEN_TTL_SEC = float(os.getenv("STT_SEEN_TTL_SEC", "60"))
-MAX_CONCURRENT_LLM = int(os.getenv("STT_MAX_CONCURRENT_LLM", "2"))
+# ========================
+LLM_MIN_GAP_SEC = 0.5  # Hardcoded, removed os.getenv
+ANSWERS_PER_MIN = 15  # Hardcoded, removed os.getenv
+SEEN_TTL_SEC = 120.0  # Hardcoded, removed os.getenv
+MAX_CONCURRENT_LLM = 3  # Hardcoded, removed os.getenv
 
+# ========================
 # Debug
-DEBUG = os.getenv("STT_DEBUG", "1") not in ("0", "false", "False")
-VERBOSE_BUFFER = os.getenv("STT_VERBOSE_BUFFER", "0") not in ("0", "false", "False")
+# ========================
+DEBUG = True  # Hardcoded, removed os.getenv
+VERBOSE_BUFFER = False  # Hardcoded, removed os.getenv
+
 
 # ========================
 # Small Helpers & Context Builders (restored from French version)
@@ -149,28 +154,39 @@ class ConversationSegment:
 
 @dataclass
 class QuestionCandidate:
-    question: str; context: str; confidence: float; urgency: str; topic_area: str; timestamp: float
-    should_answer: bool = False
+    question: str
+    context: str
+    timestamp: float
+    confidence: float = 0.7      # ← Add default value
+    urgency: str = "medium"      # ← Add default value
+    topic_area: str = "general"  # ← Add default value
 
 class ImprovedLLMAnalyzer:
-    def __init__(self, api_key: str):
-        self.enabled = LLM_ENABLED and bool(api_key.startswith("sk-"))
+    def __init__(self):
+        """Initialize with Ollama only - no API keys needed"""
+        self.enabled = LLM_ENABLED
+        self.ollama_model = OLLAMA_MODEL_CLOUD
+        self.ollama_url = OLLAMA_BASE_URL
         self.client = None
         self.previous_response_id = None
         self.last_llm_emit = 0.0
         self.seen_questions: Dict[str, float] = {}
         self.answers_timestamps = deque(maxlen=64)
         self.sem = asyncio.Semaphore(MAX_CONCURRENT_LLM)
-
+    
         if self.enabled:
             try:
-                from openai import OpenAI
-                self.client = OpenAI(api_key=api_key)
-                print(f"[llm] Ready (model={GPT_MODEL}, effort={GPT_EFFORT})")
+                import ollama
+                # Test if Ollama is accessible
+                ollama.list()
+                print(f"[llm] ✅ Ready (model={OLLAMA_MODEL_CLOUD})")
             except Exception as e:
-                print(f"[llm] Init error: {e}"); self.enabled = False
+                print(f"[llm] ❌ Ollama error: {e}")
+                print(f"[llm] Make sure Ollama is running: 'ollama serve'")
+                print(f"[llm] And model is pulled: 'ollama pull {self.ollama_model}'")
+                self.enabled = False  # Disable if Ollama is not accessible
         else:
-            print("[llm] Disabled (no valid API key)")
+            print("[llm] Disabled by configuration")
 
     def _trim_seen(self):
         now = time.time()
@@ -178,9 +194,116 @@ class ImprovedLLMAnalyzer:
         for k in expired: self.seen_questions.pop(k, None)
 
     async def analyze_segment(self, segment: ConversationSegment) -> List[QuestionCandidate]:
-        if not self.enabled: return []
-        self._trim_seen()
-        return await self._detect_questions(segment)
+        """Detect questions with context awareness"""
+        if not self.enabled:
+            return []
+
+        text = segment.text.strip()
+
+        # Broader detection for meeting support
+        text_lower = text.lower()
+        question_indicators = [
+            "what", "how", "why", "when", "where", "which", "who", "whose",
+            "can", "could", "would", "should", "will", "shall", "may", "might",
+            "do", "does", "did", "is", "are", "was", "were", "has", "have",
+            "tell me", "show me", "explain", "describe", "define", "clarify",
+            "help me", "let me know", "any idea", "thoughts on", "opinion on"
+        ]
+
+        # More lenient pre-filter for meeting context
+        has_indicator = any(indicator in text_lower for indicator in question_indicators)
+
+        if not has_indicator and len(text.split()) < 4:
+            return []
+
+        async with self.sem:
+            try:
+                import ollama
+                
+                # Enhanced extraction prompt
+                prompt = f"""Extract questions or topics that need assistance from this meeting dialogue.
+
+                Include:
+                - Direct questions
+                - Implied questions or concerns
+                - Topics where the speaker seems uncertain
+                - Requests for information or clarification
+
+                Return ONLY a JSON array of question strings.
+
+                Examples:
+                Input: "What's the best way to handle VPC peering?" 
+                Output: ["What's the best way to handle VPC peering?"]
+
+                Input: "I'm not sure about the security implications here."
+                Output: ["What are the security implications?"]
+
+                Input: "Hmm, how would that work with our current setup?"
+                Output: ["How would that work with our current setup?"]
+
+                Dialogue: {text}
+
+                JSON array:"""
+
+                response = ollama.chat(
+                    model=OLLAMA_MODEL_CLOUD,  # Fast local for detection
+                    messages=[
+                        {'role': 'system', 'content': 'Extract questions from dialogue. Return only JSON arrays.'},
+                        {'role': 'user', 'content': prompt}
+                    ]
+                )
+                
+                content = response['message']['content'].strip()
+                
+                # Parse JSON (same as before)
+                backticks = '`' * 3  # Creates '```'
+                if backticks in content:
+                    parts = content.split(backticks)
+                    for part in parts:
+                        if part.strip().startswith('json'):
+                            content = part.replace('json', '', 1).strip()
+                        elif part.strip().startswith('['):
+                            content = part.strip()
+                
+                if '[' in content:
+                    start = content.index('[')
+                    end = content.rindex(']') + 1
+                    content = content[start:end]
+                
+                try:
+                    questions = json.loads(content)
+                    
+                    if not isinstance(questions, list):
+                        return []
+                    
+                    candidates = []
+                    for q in questions[:5]:  # More questions for meeting context
+                        if isinstance(q, str) and len(q.strip()) > 3:
+                            q_clean = q.strip()
+                            if not q_clean.endswith('?'):
+                                q_clean += '?'
+                            
+                            candidates.append(QuestionCandidate(
+                                question=q_clean,
+                                context=text,
+                                timestamp=time.time(),
+                                confidence=0.8,
+                                urgency="medium",
+                                topic_area="technical"
+                            ))
+                    
+                    if DEBUG and candidates:
+                        print(f"[llm] ✅ Detected {len(candidates)} topics: {[c.question for c in candidates]}")
+                    
+                    return candidates
+                    
+                except json.JSONDecodeError:
+                    return []
+                
+            except Exception as e:
+                if DEBUG:
+                    print(f"[llm] Detection error: {e}")
+                return []
 
     async def _detect_questions(self, segment: ConversationSegment) -> List[QuestionCandidate]:
         if time.time() - self.last_llm_emit < LLM_MIN_GAP_SEC: return []
@@ -228,85 +351,161 @@ class ImprovedLLMAnalyzer:
         return clean[:3]
 
     def _should_answer(self, question: str) -> Dict[str, Any]:
-        if not self.enabled: return {"should_answer": False}
+        """Determine if we should answer this question"""
+        if not self.enabled:
+            return {"should_answer": False}
+        
+        # Rate limiting check
         now = time.time()
         while self.answers_timestamps and now - self.answers_timestamps[0] > 60:
             self.answers_timestamps.popleft()
+        
         if len(self.answers_timestamps) >= ANSWERS_PER_MIN:
+            if DEBUG:
+                print(f"[llm] Rate limit reached ({ANSWERS_PER_MIN}/min)")
             return {"should_answer": False}
-
+        
+        # Improved heuristic check
         ql = question.lower().strip()
-        wh = ("what", "how", "why", "when", "where", "which", "who", "can", "could", "do", "is", "are")
-        looks_like_q = ql.endswith("?") or any(ql.startswith(w + " ") for w in wh)
-
-        try:
-            resp = self.client.responses.create(
-                model=GPT_MODEL, reasoning={"effort": GPT_EFFORT},
-                input=[
-                    {"role": "developer", "content": "Is this an interview question needing an answer? Reply ONLY 'YES' or 'NO'."},
-                    {"role": "user", "content": f"Context:\n{build_llm_context_text()[-1000:]}\n\nQuestion: {question}"},
-                ],
-            )
-            out = (getattr(resp, "output_text", "") or "").strip().lower()
-            decided_yes = "yes" in out and "no" not in out
-        except Exception as e:
-            if DEBUG: print(f"[llm] Decision error: {e}")
-            decided_yes = looks_like_q
-
-        if decided_yes:
-            ts = time.time(); self.last_llm_emit = ts; self.answers_timestamps.append(ts)
-        return {"should_answer": decided_yes, "confidence": 0.75 if decided_yes else 0.3}
-
-    async def generate_answer(self, candidate: QuestionCandidate) -> str:
-        if not self.enabled: return "[LLM disabled]"
-        async with self.sem:
-            return await asyncio.get_running_loop().run_in_executor(None, self._gen, candidate)
-
-    def _gen(self, candidate: QuestionCandidate) -> str:
-        """Advanced answer generation with persona, context, and retry (restored from French version)."""
-        try:
-            q = (candidate.question or "").strip()
-            if PERSONA == "candidate":
-                system_prompt = (
-                    "You are a tech professional answering questions in a job interview. "
-                    "Speak in the first person singular ('I'). Provide 3-5 concise, complete sentences. "
-                    "Start with a direct answer, then provide concrete points or a brief, relevant example from a tech domain "
-                    "(e.g., web services, data pipelines, ML models). "
-                    "Do not use bullet points, lists, or any meta-commentary/coaching phrases."
+        
+        # Strong question indicators
+        question_words = ["what", "how", "why", "when", "where", "which", "who"]
+        auxiliary_verbs = ["can", "could", "would", "should", "do", "does", "did", "is", "are", "was", "were", "will"]
+        
+        looks_like_q = (
+            ql.endswith("?") or
+            any(ql.startswith(w + " ") for w in question_words) or
+            any(ql.startswith(w + " you") for w in auxiliary_verbs) or
+            any(phrase in ql for phrase in ["tell me", "explain", "describe", "define"])
+        )
+        
+        # Reject very short non-questions
+        if not looks_like_q and len(question.split()) < 4:
+            return {"should_answer": False}
+        
+        # For clear questions, answer immediately
+        if ql.endswith("?") or any(ql.startswith(w + " ") for w in question_words):
+            ts = time.time()
+            self.last_llm_emit = ts
+            self.answers_timestamps.append(ts)
+            return {"should_answer": True, "confidence": 0.9}
+        
+        # For ambiguous cases, use Ollama (simplified)
+        if looks_like_q:
+            try:
+                import ollama
+                response = ollama.chat(
+                    model=OLLAMA_MODEL_CLOUD,
+                    messages=[
+                        {'role': 'system', 'content': "Is this an interview question? Answer only YES or NO."},
+                        {'role': 'user', 'content': question}
+                    ]
                 )
-            else: # Fallback "coach" persona
-                system_prompt = "Provide a concise, helpful answer in 2-4 sentences."
+                out = response['message']['content'].strip().lower()
+                decided_yes = "yes" in out
+                
+            except Exception:
+                decided_yes = looks_like_q
+            
+            if decided_yes:
+                ts = time.time()
+                self.last_llm_emit = ts
+                self.answers_timestamps.append(ts)
+            
+            return {"should_answer": decided_yes, "confidence": 0.7}
+        
+        return {"should_answer": False}
 
-            inputs = [{"role": "developer", "content": system_prompt}]
+    async def _gen(self, candidate: QuestionCandidate) -> str:
+        """Generate contextually-aware answer using Ollama Cloud"""
+        try:
+            import ollama
+        
+            q = (candidate.question or "").strip()
+            
+            if DEBUG:    
+                print(f"[llm] 🌩️  Using MODEL: {OLLAMA_MODEL_CLOUD}")
+        
+            # Build system prompt based on persona
+            if PERSONA == "candidate":
+                system_prompt = """You are an expert AI assistant helping during a professional meeting or call.
+
+                ROLE: Provide intelligent, contextually-aware support in real-time.
+
+                OUTPUT STYLE:
+                - Use first-person ("I would...") when asked about your opinion
+                - Use second-person ("You could...") when giving advice
+                - Provide 2-4 concise, actionable points
+                - Include specific examples or references when relevant
+                - Be professional but conversational
+                - Format: Brief intro + 2-3 key points + optional suggestion
+
+                CONTEXT AWARENESS:
+                - Track conversation flow from the transcript
+                - Reference previous discussion points when relevant
+                - Adapt tone to match meeting context (formal vs. casual)
+                - Prioritize actionable information over theory
+
+                AVOID:
+                - Long paragraphs or lectures
+                - Bullet point lists (use flowing sentences)
+                - Coaching language ("Let me explain...")
+                - Overly technical jargon unless context demands it"""
+            else:
+                system_prompt = """You are a helpful meeting assistant. 
+                Provide brief, contextual answers in 2-3 sentences.
+                Be concise and actionable.""" 
+        
+            # Build enhanced context
+            context_parts = []
+            
+            # Include conversation history for context awareness
             if LLM_INCLUDE_FULL_TRANSCRIPT:
                 full_tx = build_llm_context_text()
-                if full_tx: inputs.append({"role": "user", "content": f"Full Interview Transcript (for context):\n{full_tx}"})
+                if full_tx:
+                    recent_context = full_tx[-3000:]  # Last ~3000 chars
+                    context_parts.append(f"Recent conversation:\n{recent_context}")
             
+            # Add domain context
             if TECH_INTERVIEW_MODE:
-                inputs.append({"role": "user", "content": "Domain context: general software engineering, data science, cloud infrastructure."})
-
-            inputs.extend([
-                {"role": "user", "content": f"Question: {q}"},
-                {"role": "user", "content": "Answer now as a final spoken response. Avoid addressing the interviewer as 'you'."},
-            ])
-
-            resp = self.client.responses.create(model=GPT_MODEL, reasoning={"effort": GPT_EFFORT}, input=inputs, max_output_tokens=MAX_OUTTOK)
-            raw_text = (getattr(resp, "output_text", "") or "").strip()
-            cleaned = sanitize_candidate_voice(raw_text)
-
-            if not cleaned.strip(): # Retry logic
-                if DEBUG: print("[llm] Response was empty, retrying with simpler prompt...")
-                retry_inputs = [
-                    {"role": "developer", "content": "Answer the following question as a tech job candidate in the first person."},
-                    {"role": "user", "content": f"Question: {q}"}
+                context_parts.append("Domain: Cloud computing, AWS, security, system design, software engineering, DevOps, infrastructure.")
+            
+            # Add current question with emphasis
+            context_parts.append(f"Current question: {q}")
+            context_parts.append("Provide a helpful, contextual response that fits naturally into the ongoing conversation.")
+            
+            user_content = "\n\n".join(context_parts)
+            
+            # Use cloud model for high-quality contextual answers
+            response = ollama.chat(
+                model=OLLAMA_MODEL_CLOUD,  # Cloud for best quality
+                messages=[
+                    {'role': 'system', 'content': system_prompt},
+                    {'role': 'user', 'content': user_content}
                 ]
-                resp2 = self.client.responses.create(model=GPT_MODEL, input=retry_inputs, max_output_tokens=MAX_OUTTOK)
-                raw2 = (getattr(resp2, "output_text", "") or "").strip()
-                cleaned = sanitize_candidate_voice(raw2)
-
-            return cleaned if cleaned.strip() else "I would evaluate the model on a held-out test set to measure its generalization performance."
+            )
+            
+            raw_text = response['message']['content'].strip()
+            
+            # Light sanitization (preserve conversational flow)
+            cleaned = sanitize_candidate_voice(raw_text)
+            
+            if not cleaned.strip():
+                if DEBUG:
+                    print("[llm] Response was empty, using fallback...")
+                return "Let me think about that. Based on the context, I'd suggest starting with a proof-of-concept to validate the approach."
+        
+            if DEBUG:
+                print(f"[llm] Generated contextual answer ({len(cleaned)} chars)")
+            
+            return cleaned
+            
         except Exception as e:
-            return f"[Answer error] {str(e)[:120]}"
+            error_msg = f"[Answer error] {str(e)[:120]}"
+            if DEBUG:
+                print(f"[llm] Generation error: {e}")
+            return error_msg
+
 
 # ========================
 # Global Server State
@@ -454,7 +653,7 @@ async def read_and_transcribe_loop():
                         item = {"q": cand.question, "t": int(cand.timestamp * 1000), "a": None}
                         detected.append(item)
                         await broadcast({"question_detected": item})
-                        ans = await llm_analyzer.generate_answer(cand)
+                        ans = await llm_analyzer._gen(cand)
                         item["a"] = ans; qa_log.append(item)
                         await broadcast({"qa": item})
                         if DEBUG: print(f"[llm] Response: {ans[:60]}...")
@@ -475,7 +674,7 @@ async def main():
     print("🚀 OPTIMIZED STT SERVER V4 (Best of Both Worlds)")
     print("=" * 50)
     print("[startup] Loading Whisper model..."); whisper = load_whisper_model()
-    print("[startup] Initializing LLM Analyzer..."); llm_analyzer = ImprovedLLMAnalyzer(OPENAI_API_KEY)
+    print("[startup] Initializing LLM Analyzer..."); llm_analyzer = ImprovedLLMAnalyzer()
     print(f"\n📋 CONFIG: LLM {'Enabled' if llm_analyzer.enabled else 'Disabled'}, Debug {'ON' if DEBUG else 'OFF'}")
 
     try:

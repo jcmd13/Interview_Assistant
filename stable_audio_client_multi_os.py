@@ -8,6 +8,7 @@ import time
 import platform  # <-- NEW: To detect the OS
 import re        # <-- NEW: For text parsing
 import sys       # <-- NEW: For clean exit
+import websockets 
 
 # ==============================================================================
 # NEW SECTION: MULTI-PLATFORM HANDLING
@@ -122,8 +123,12 @@ class StableAudioStreamer:
         print(f"[info] Connection attempt #{self.connection_count} to {self.ws_url}")
         
         async with websockets.connect(
-            self.ws_url, max_size=2**20, ping_interval=15, ping_timeout=8,
-            close_timeout=3, compression=None
+            self.ws_url, 
+            max_size=2**20, 
+            ping_interval=None, 
+            ping_timeout=None,
+            close_timeout=10, 
+            compression=None
         ) as ws:
             self.ws = ws
             print(f"[info] ✅ Connection #{self.connection_count} established")
