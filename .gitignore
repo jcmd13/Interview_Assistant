@@ -31,3 +31,11 @@ Thumbs.db
 *.mp3
 *.flac
 *.ogg
+.DS_Store
+.kiro/specs/lightweight-interview-assistant/design.md
+.kiro/specs/lightweight-interview-assistant/requirements.md
+.kiro/specs/lightweight-interview-assistant/tasks.md
+.kiro/steering/product.md
+.kiro/steering/structure.md
+.kiro/steering/tech.md
+.vscode/settings.json
