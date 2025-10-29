@@ -18,3 +18,17 @@ numpy
 
 # Audio Processing (if needed for additional features)
 # pyaudio  # Uncomment if you need direct audio device access
+
+# Structured Logging (Phase 1)
+structlog
+python-json-logger
+
+# Testing Framework (Phase 1)
+pytest
+pytest-asyncio
+pytest-cov
+
+# Configuration Management (Phase 1)
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+python-dotenv>=1.0.0

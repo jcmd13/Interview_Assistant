@@ -8,57 +8,193 @@ import numpy as np
 import websockets
 from faster_whisper import WhisperModel
 
+# Structured logging (Phase 1)
+try:
+    from src.core.logger import get_logger, configure_logging
+    from src.core.timing import LatencyTracker
+    STRUCTURED_LOGGING_AVAILABLE = True
+except ImportError:
+    # Fallback if src/ modules not available yet
+    STRUCTURED_LOGGING_AVAILABLE = False
+    get_logger = None
+    configure_logging = None
+    LatencyTracker = None
+
+# Configuration management (Phase 1)
+try:
+    from src.core.config import get_config
+    CONFIG_AVAILABLE = True
+except ImportError:
+    # Fallback if src/ modules not available yet
+    CONFIG_AVAILABLE = False
+    get_config = None
+
+# Application state management (Phase 2)
+try:
+    from src.server.state import get_state
+    STATE_AVAILABLE = True
+except ImportError:
+    # Fallback if state module not available
+    STATE_AVAILABLE = False
+    get_state = None
+
 # ========================
 # Configuration
 # ========================
-HOST = "127.0.0.1"  # Hardcoded, removed os.getenv
-PORT = 8123  # Hardcoded, removed os.getenv
 
-SAMPLE_RATE = 16000
-WINDOW_SECONDS = 6.0  # Hardcoded, removed os.getenv
-HOP_SECONDS = 0.8  # Hardcoded, removed os.getenv
-ENERGY_GATE = 1e-4  # Hardcoded, removed os.getenv
+# Load configuration from config system if available
+if CONFIG_AVAILABLE and get_config is not None:
+    _cfg = get_config()
 
-MODEL_NAME = "tiny"  # Hardcoded, removed os.getenv
-COMPUTE_TYPE = "int8"  # Hardcoded, removed os.getenv
-FORCE_LANG = None  # Hardcoded, removed os.getenv
-# Generic tech prompt for better transcription of jargon
-INITIAL_PROMPT = "Software engineering, data structures, algorithms, system design, cloud computing, AWS, Azure, GCP, microservices, API, CI/CD, DevOps, machine learning, data science, Python, Java, JavaScript, SQL, NoSQL, product management, agile, scrum, cloud security, SOC operations, incident response, SIEM, EDR, IAM, RBAC, zero trust."
+    # Server
+    HOST = _cfg.server.host
+    PORT = _cfg.server.port
+
+    # Audio
+    SAMPLE_RATE = _cfg.audio.sample_rate
+    WINDOW_SECONDS = _cfg.audio.window_seconds
+    HOP_SECONDS = _cfg.audio.hop_seconds
+    ENERGY_GATE = _cfg.audio.energy_gate
+
+    # Whisper
+    MODEL_NAME = _cfg.whisper.model_name
+    COMPUTE_TYPE = _cfg.whisper.compute_type
+    FORCE_LANG = _cfg.whisper.force_lang
+    INITIAL_PROMPT = _cfg.whisper.initial_prompt
+
+    # Ollama
+    LLM_ENABLED = _cfg.llm.enabled
+    OLLAMA_MODEL = _cfg.ollama.model
+    OLLAMA_BASE_URL = _cfg.ollama.base_url
+    OLLAMA_MODEL_CLOUD = _cfg.ollama.model_cloud
+
+    # LLM Behavior
+    LLM_INCLUDE_FULL_TRANSCRIPT = _cfg.llm.include_full_transcript
+    TECH_INTERVIEW_MODE = _cfg.llm.tech_interview_mode
+    LLM_CONTEXT_MODE = _cfg.llm.context_mode
+    LLM_WINDOW_LINES = _cfg.llm.window_lines
+    LLM_HEAD_LINES = _cfg.llm.head_lines
+    LLM_TAIL_LINES = _cfg.llm.tail_lines
+    LLM_MAX_CONTEXT_CHARS = _cfg.llm.max_context_chars
+    MAX_OUTTOK = _cfg.llm.max_output_tokens
+    PERSONA = _cfg.llm.persona
+
+    # Rate Limiting
+    LLM_MIN_GAP_SEC = _cfg.rate_limit.min_gap_sec
+    ANSWERS_PER_MIN = _cfg.rate_limit.answers_per_min
+    SEEN_TTL_SEC = _cfg.rate_limit.seen_ttl_sec
+    MAX_CONCURRENT_LLM = _cfg.rate_limit.max_concurrent_llm
+
+    # Debug
+    DEBUG = _cfg.debug.debug
+    VERBOSE_BUFFER = _cfg.debug.verbose_buffer
+
+    # Feature Flags
+    USE_STRUCTURED_LOGGING = _cfg.features.use_structured_logging
+
+else:
+    # Fallback to hardcoded defaults if config system not available
+    HOST = "127.0.0.1"
+    PORT = 8123
+
+    SAMPLE_RATE = 16000
+    WINDOW_SECONDS = 6.0
+    HOP_SECONDS = 0.8
+    ENERGY_GATE = 1e-4
+
+    MODEL_NAME = "tiny"
+    COMPUTE_TYPE = "int8"
+    FORCE_LANG = None
+    INITIAL_PROMPT = "Software engineering, data structures, algorithms, system design, cloud computing, AWS, Azure, GCP, microservices, API, CI/CD, DevOps, machine learning, data science, Python, Java, JavaScript, SQL, NoSQL, product management, agile, scrum, cloud security, SOC operations, incident response, SIEM, EDR, IAM, RBAC, zero trust."
+
+    LLM_ENABLED = True
+    OLLAMA_MODEL = "gpt-oss:120b-cloud"
+    OLLAMA_BASE_URL = "http://localhost:11434"
+    OLLAMA_MODEL_CLOUD = "gpt-oss:120b-cloud"
+
+    LLM_INCLUDE_FULL_TRANSCRIPT = True
+    TECH_INTERVIEW_MODE = True
+    LLM_CONTEXT_MODE = "full"
+    LLM_WINDOW_LINES = 200
+    LLM_HEAD_LINES = 80
+    LLM_TAIL_LINES = 400
+    LLM_MAX_CONTEXT_CHARS = 400000
+    MAX_OUTTOK = 400
+    PERSONA = "candidate"
+
+    LLM_MIN_GAP_SEC = 0.5
+    ANSWERS_PER_MIN = 15
+    SEEN_TTL_SEC = 120.0
+    MAX_CONCURRENT_LLM = 3
+
+    DEBUG = True
+    VERBOSE_BUFFER = False
+
+    USE_STRUCTURED_LOGGING = True
+
 
 # ========================
-# LLM Configuration - OLLAMA ONLY
+# Logging Setup (Phase 1)
 # ========================
-LLM_ENABLED = True  # Hardcoded to True
-OLLAMA_MODEL = "gpt-oss:120b-cloud"  #phi3.5:3.8b  #llama3.2 #qwen2.5:1.5b #llama3.2:1b #gemma2:2b #mistral
-OLLAMA_BASE_URL = "http://localhost:11434"  # Added for Ollama
-OLLAMA_MODEL_CLOUD = "gpt-oss:120b-cloud"
+# Initialize loggers for each component
+if USE_STRUCTURED_LOGGING and STRUCTURED_LOGGING_AVAILABLE:
+    # Configure structured logging
+    configure_logging(
+        log_level="DEBUG" if DEBUG else "INFO",
+        json_output=True,
+        pretty_print=False
+    )
 
-# ========================
-# Advanced LLM Context                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       ntext Control
-# ========================
-LLM_INCLUDE_FULL_TRANSCRIPT = True  # Hardcoded, removed os.getenv
-TECH_INTERVIEW_MODE = True  # Hardcoded, removed os.getenv
-LLM_CONTEXT_MODE = "full"  # Hardcoded, removed os.getenv
-LLM_WINDOW_LINES = 200  # Hardcoded, removed os.getenv
-LLM_HEAD_LINES = 80  # Hardcoded, removed os.getenv
-LLM_TAIL_LINES = 400  # Hardcoded, removed os.getenv
-LLM_MAX_CONTEXT_CHARS = 400000  # Hardcoded, removed os.getenv
-MAX_OUTTOK = 400  # Hardcoded, removed os.getenv
-PERSONA = "candidate"  # Hardcoded, removed os.getenv
+    # Create component-specific loggers
+    model_logger = get_logger("model")
+    llm_logger = get_logger("llm.analyzer")
+    ws_logger = get_logger("websocket")
+    stt_logger = get_logger("transcription")
+    startup_logger = get_logger("startup")
+    error_logger = get_logger("error")
+else:
+    # Fallback: use None and handle in log function
+    model_logger = llm_logger = ws_logger = stt_logger = startup_logger = error_logger = None
 
-# ========================
-# LLM Rate Limiting
-# ========================
-LLM_MIN_GAP_SEC = 0.5  # Hardcoded, removed os.getenv
-ANSWERS_PER_MIN = 15  # Hardcoded, removed os.getenv
-SEEN_TTL_SEC = 120.0  # Hardcoded, removed os.getenv
-MAX_CONCURRENT_LLM = 3  # Hardcoded, removed os.getenv
 
-# ========================
-# Debug
-# ========================
-DEBUG = True  # Hardcoded, removed os.getenv
-VERBOSE_BUFFER = False  # Hardcoded, removed os.getenv
+def log(component: str, level: str, event: str, **kwargs):
+    """
+    Unified logging function with fallback to print.
+
+    Args:
+        component: Component name (model, llm, ws, stt, startup, error)
+        level: Log level (info, debug, warning, error)
+        event: Event description
+        **kwargs: Additional structured data
+    """
+    if USE_STRUCTURED_LOGGING and STRUCTURED_LOGGING_AVAILABLE:
+        # Use structured logging
+        logger_map = {
+            "model": model_logger,
+            "llm": llm_logger,
+            "ws": ws_logger,
+            "stt": stt_logger,
+            "startup": startup_logger,
+            "error": error_logger,
+        }
+        logger = logger_map.get(component, startup_logger)
+
+        if logger:
+            log_method = getattr(logger, level.lower(), logger.info)
+            log_method(event, **kwargs)
+    else:
+        # Fallback to print with component prefix
+        emoji_map = {"model": "[model]", "llm": "[llm]", "ws": "[ws]",
+                     "stt": "[stt]", "startup": "[startup]", "error": "[error]"}
+        prefix = emoji_map.get(component, f"[{component}]")
+
+        # Build message
+        msg_parts = [f"{prefix} {event}"]
+        if kwargs:
+            for k, v in kwargs.items():
+                msg_parts.append(f"{k}={v}")
+
+        print(" ".join(msg_parts))
 
 
 # ========================
@@ -119,13 +255,13 @@ def hf_cache_dir() -> str:
 def load_whisper_model() -> WhisperModel:
     cache_root = hf_cache_dir()
     try:
-        print(f"[model] Loading {MODEL_NAME} in {cache_root}")
+        log("model", "info", "loading_whisper", model_name=MODEL_NAME, cache_path=cache_root)
         return WhisperModel(MODEL_NAME, compute_type=COMPUTE_TYPE, download_root=cache_root)
     except Exception:
         model_folder_name = f"models--Systran--faster-whisper-{MODEL_NAME}"
         corrupted_path = os.path.join(cache_root, model_folder_name)
         if os.path.isdir(corrupted_path):
-            print(f"[model] Corrupted cache detected, purging: {corrupted_path}")
+            log("model", "warning", "corrupted_cache_detected", path=corrupted_path, action="purging")
             shutil.rmtree(corrupted_path, ignore_errors=True)
         return WhisperModel(MODEL_NAME, compute_type=COMPUTE_TYPE, download_root=cache_root)
 
@@ -179,14 +315,15 @@ class ImprovedLLMAnalyzer:
                 import ollama
                 # Test if Ollama is accessible
                 ollama.list()
-                print(f"[llm] ✅ Ready (model={OLLAMA_MODEL_CLOUD})")
+                log("llm", "info", "llm_ready", model=OLLAMA_MODEL_CLOUD, status="ready")
             except Exception as e:
-                print(f"[llm] ❌ Ollama error: {e}")
-                print(f"[llm] Make sure Ollama is running: 'ollama serve'")
-                print(f"[llm] And model is pulled: 'ollama pull {self.ollama_model}'")
+                log("llm", "error", "ollama_initialization_failed",
+                    error=str(e),
+                    help_message="Make sure Ollama is running: 'ollama serve'",
+                    model_pull_command=f"ollama pull {self.ollama_model}")
                 self.enabled = False  # Disable if Ollama is not accessible
         else:
-            print("[llm] Disabled by configuration")
+            log("llm", "info", "llm_disabled", reason="configuration")
 
     def _trim_seen(self):
         now = time.time()
@@ -293,29 +430,33 @@ class ImprovedLLMAnalyzer:
                             ))
                     
                     if DEBUG and candidates:
-                        print(f"[llm] ✅ Detected {len(candidates)} topics: {[c.question for c in candidates]}")
-                    
+                        log("llm", "debug", "topics_detected",
+                            count=len(candidates),
+                            questions=[c.question for c in candidates])
+
                     return candidates
-                    
+
                 except json.JSONDecodeError:
                     return []
-                
+
             except Exception as e:
                 if DEBUG:
-                    print(f"[llm] Detection error: {e}")
+                    log("llm", "error", "detection_error", error=str(e))
                 return []
 
     async def _detect_questions(self, segment: ConversationSegment) -> List[QuestionCandidate]:
         if time.time() - self.last_llm_emit < LLM_MIN_GAP_SEC: return []
         qs = self._extract_questions_aggressive(segment.text)
         if not qs: return []
-        if DEBUG: print(f"[llm] Found {len(qs)} potential questions: {[q[:40] + '...' for q in qs]}")
+        if DEBUG: log("llm", "debug", "potential_questions_found",
+                      count=len(qs),
+                      questions=[q[:40] + '...' for q in qs])
 
         candidates: List[QuestionCandidate] = []
         for q in qs:
             k = _qkey(q)
             if not k or k in self.seen_questions: continue
-            
+
             decide = await asyncio.get_running_loop().run_in_executor(None, self._should_answer, q)
             if decide.get("should_answer"):
                 self.seen_questions[k] = time.time()
@@ -324,7 +465,7 @@ class ImprovedLLMAnalyzer:
                     urgency="relevant", topic_area="interview", timestamp=segment.timestamp, should_answer=True,
                 )
                 candidates.append(cand)
-                if DEBUG: print(f"[llm] Will answer: {q}")
+                if DEBUG: log("llm", "debug", "will_answer_question", question=q)
         return candidates[:3]
 
     def _extract_questions_aggressive(self, text: str) -> List[str]:
@@ -362,7 +503,9 @@ class ImprovedLLMAnalyzer:
         
         if len(self.answers_timestamps) >= ANSWERS_PER_MIN:
             if DEBUG:
-                print(f"[llm] Rate limit reached ({ANSWERS_PER_MIN}/min)")
+                log("llm", "warning", "rate_limit_reached",
+                    limit_per_min=ANSWERS_PER_MIN,
+                    current_count=len(self.answers_timestamps))
             return {"should_answer": False}
         
         # Improved heuristic check
@@ -422,9 +565,9 @@ class ImprovedLLMAnalyzer:
             import ollama
         
             q = (candidate.question or "").strip()
-            
-            if DEBUG:    
-                print(f"[llm] 🌩️  Using MODEL: {OLLAMA_MODEL_CLOUD}")
+
+            if DEBUG:
+                log("llm", "debug", "generating_answer", model=OLLAMA_MODEL_CLOUD, question=q[:60])
         
             # Build system prompt based on persona
             if PERSONA == "candidate":
@@ -489,21 +632,21 @@ class ImprovedLLMAnalyzer:
             
             # Light sanitization (preserve conversational flow)
             cleaned = sanitize_candidate_voice(raw_text)
-            
+
             if not cleaned.strip():
                 if DEBUG:
-                    print("[llm] Response was empty, using fallback...")
+                    log("llm", "warning", "empty_response_using_fallback")
                 return "Let me think about that. Based on the context, I'd suggest starting with a proof-of-concept to validate the approach."
-        
+
             if DEBUG:
-                print(f"[llm] Generated contextual answer ({len(cleaned)} chars)")
-            
+                log("llm", "info", "answer_generated", answer_length=len(cleaned))
+
             return cleaned
-            
+
         except Exception as e:
             error_msg = f"[Answer error] {str(e)[:120]}"
             if DEBUG:
-                print(f"[llm] Generation error: {e}")
+                log("llm", "error", "generation_error", error=str(e))
             return error_msg
 
 
@@ -515,6 +658,20 @@ class ClientState:
     ws: websockets.WebSocketServerProtocol; queue: asyncio.Queue
     sender_task: Optional[asyncio.Task] = None; wants_broadcast: bool = True; role: str = "ui"
 
+# ========================
+# Global State & Legacy Variables (Phase 2: Transitioning to ApplicationState)
+# ========================
+
+# Initialize application state if available
+if STATE_AVAILABLE and get_state is not None:
+    app_state = get_state()
+    log("startup", "info", "using_application_state", module="src.server.state")
+else:
+    # Fallback: keep legacy global variables
+    app_state = None
+    log("startup", "info", "application_state_not_available", using_legacy="true")
+
+# Legacy global variables (for backward compatibility during migration)
 clients: Dict[websockets.WebSocketServerProtocol, ClientState] = {}
 latest_text, sentence_buf = "", ""
 detected = deque(maxlen=500); qa_log = deque(maxlen=200)
@@ -549,7 +706,7 @@ async def broadcast(data: dict):
 
 async def handler(ws: websockets.WebSocketServerProtocol):
     global transcriber_task, bytes_since_last
-    print(f"[ws] Client connected from {ws.remote_address}")
+    log("ws", "info", "client_connected", remote_address=str(ws.remote_address))
     client = ClientState(ws=ws, queue=asyncio.Queue(maxsize=100))
     client.sender_task = asyncio.create_task(_client_sender(client))
     clients[ws] = client
@@ -573,16 +730,19 @@ async def handler(ws: websockets.WebSocketServerProtocol):
                     cmd = (data.get("cmd") or "").lower()
                     if cmd == "hello" and (data.get("client") or "").lower() in ("audio_streamer", "ingest"):
                         client.wants_broadcast = False
-                        if DEBUG: print(f"[ws] Marked {ws.remote_address} as streamer; broadcasts OFF")
+                        if DEBUG: log("ws", "debug", "client_marked_as_streamer",
+                                     remote_address=str(ws.remote_address),
+                                     broadcast_status="OFF")
                     elif cmd == "reset":
                         async with audio_lock: pcm_buf.clear(); bytes_since_last = 0
-                        reset_state(); print("[ws] Reset completed")
+                        reset_state()
+                        log("ws", "info", "reset_completed")
                 except Exception: pass
     except (websockets.ConnectionClosedOK, websockets.ConnectionClosedError): pass
     finally:
         clients.pop(ws, None)
         if client.sender_task: client.sender_task.cancel()
-        print("[ws] Client disconnected")
+        log("ws", "info", "client_disconnected")
 
 # ========================
 # Global Transcriber Loop
@@ -590,7 +750,7 @@ async def handler(ws: websockets.WebSocketServerProtocol):
 async def read_and_transcribe_loop():
     global bytes_since_last, latest_text, sentence_buf, transcript_lines
     loop, last_hashes, process_count = asyncio.get_running_loop(), deque(maxlen=8), 0
-    print("[stt] Transcription loop started (global)")
+    log("stt", "info", "transcription_loop_started", mode="global")
     PROMPT_WORDS = {w.strip(".,").lower() for w in INITIAL_PROMPT.split()} if INITIAL_PROMPT else set()
 
     while not server_shutdown.is_set():
@@ -607,7 +767,8 @@ async def read_and_transcribe_loop():
                 segments, _ = whisper.transcribe(arr, language=FORCE_LANG, vad_filter=True, initial_prompt=INITIAL_PROMPT if not latest_text else None)
                 return list(segments)
             except Exception as e:
-                print(f"[stt] Transcription error: {e}"); return []
+                log("stt", "error", "transcription_error", error=str(e))
+                return []
 
         segments = await loop.run_in_executor(None, _transcribe)
         if not segments: continue
@@ -619,10 +780,10 @@ async def read_and_transcribe_loop():
             # Advanced filtering (restored from French version)
             toks = [w.strip(".,").lower() for w in text.split()]
             if toks and PROMPT_WORDS and sum(1 for w in toks if w in PROMPT_WORDS) / max(1, len(toks)) > 0.6:
-                if DEBUG: print("[stt] Dropped segment: initial_prompt echo")
+                if DEBUG: log("stt", "debug", "segment_dropped", reason="initial_prompt_echo", text=text[:60])
                 continue
             if re.search(r"\b(\w+(?:,\s*\w+){1,})\b(?:\s+\1\b){2,}", text, flags=re.I):
-                if DEBUG: print("[stt] Dropped segment: repetitive phrase")
+                if DEBUG: log("stt", "debug", "segment_dropped", reason="repetitive_phrase", text=text[:60])
                 continue
 
             h = hashlib.md5(text.encode("utf-8")).hexdigest()
@@ -641,7 +802,7 @@ async def read_and_transcribe_loop():
                 if not s: continue
                 transcript_lines.append(s)
                 if len(transcript_lines) > MAX_TRANSCRIPT_LINES: del transcript_lines[:MAX_TRANSCRIPT_LINES // 10]
-                if DEBUG: print(f"[stt] Line: {s}")
+                if DEBUG: log("stt", "debug", "transcript_line", line_number=len(transcript_lines), text=s)
                 await broadcast({"line": {"n": len(transcript_lines), "text": s}})
             
             await broadcast({"partial": text})
@@ -656,38 +817,58 @@ async def read_and_transcribe_loop():
                         ans = await llm_analyzer._gen(cand)
                         item["a"] = ans; qa_log.append(item)
                         await broadcast({"qa": item})
-                        if DEBUG: print(f"[llm] Response: {ans[:60]}...")
+                        if DEBUG: log("llm", "debug", "response_generated", preview=ans[:60])
                 except Exception as e:
-                    print(f"[llm] Analysis error: {e}")
+                    log("llm", "error", "analysis_error", error=str(e))
 
 # ========================
 # Utilities & Main
 # ========================
 def reset_state():
+    """Reset all application state (uses ApplicationState if available, falls back to legacy)."""
     global latest_text, sentence_buf, transcript_lines
+
+    # If application state is available, use it (async-safe reset via asyncio.run)
+    if app_state is not None:
+        try:
+            asyncio.run(app_state.reset())
+            log("startup", "info", "state_reset_via_application_state")
+        except Exception as e:
+            log("error", "warning", "state_reset_via_application_state_failed", error=str(e))
+            # Fall through to legacy reset
+
+    # Legacy reset (for backward compatibility)
     latest_text, sentence_buf = "", ""; transcript_lines.clear(); detected.clear(); qa_log.clear()
     if llm_analyzer:
         llm_analyzer.seen_questions.clear(); llm_analyzer.answers_timestamps.clear()
 
 async def main():
     global whisper, llm_analyzer
-    print("🚀 OPTIMIZED STT SERVER V4 (Best of Both Worlds)")
-    print("=" * 50)
-    print("[startup] Loading Whisper model..."); whisper = load_whisper_model()
-    print("[startup] Initializing LLM Analyzer..."); llm_analyzer = ImprovedLLMAnalyzer()
-    print(f"\n📋 CONFIG: LLM {'Enabled' if llm_analyzer.enabled else 'Disabled'}, Debug {'ON' if DEBUG else 'OFF'}")
+    log("startup", "info", "server_starting", version="V4", mode="Best of Both Worlds")
+    log("startup", "info", "loading_whisper_model")
+    whisper = load_whisper_model()
+    log("startup", "info", "initializing_llm_analyzer")
+    llm_analyzer = ImprovedLLMAnalyzer()
+    log("startup", "info", "configuration",
+        llm_enabled=llm_analyzer.enabled,
+        debug_mode=DEBUG,
+        structured_logging=USE_STRUCTURED_LOGGING and STRUCTURED_LOGGING_AVAILABLE)
 
     try:
         async with websockets.serve(handler, HOST, PORT, max_size=2**20, ping_interval=10, ping_timeout=30):
-            print(f"\n🎤 Server ready on ws://{HOST}:{PORT}/"); await asyncio.Future()
+            log("startup", "info", "server_ready", host=HOST, port=PORT, url=f"ws://{HOST}:{PORT}/")
+            await asyncio.Future()
     except Exception as e:
-        print(f"[error] Server failed to start: {e}")
+        log("error", "error", "server_failed_to_start", error=str(e))
 
 if __name__ == "__main__":
     try:
         whisper: WhisperModel; llm_analyzer: Optional[ImprovedLLMAnalyzer]
         asyncio.run(main())
     except KeyboardInterrupt:
-        server_shutdown.set(); print("\n[shutdown] Server stopped.")
+        server_shutdown.set()
+        log("startup", "info", "server_stopped", reason="keyboard_interrupt")
     except Exception as e:
-        print(f"\n[fatal_error] {e}"); import traceback; traceback.print_exc()
+        log("error", "error", "fatal_error", error=str(e), traceback=True)
+        import traceback
+        traceback.print_exc()
