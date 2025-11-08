@@ -38,6 +38,33 @@ except ImportError:
     STATE_AVAILABLE = False
     get_state = None
 
+# Audio device management (Phase 0)
+try:
+    from src.audio import get_device_manager
+    AUDIO_DEVICE_MANAGER_AVAILABLE = True
+except ImportError:
+    # Fallback if audio module not available
+    AUDIO_DEVICE_MANAGER_AVAILABLE = False
+    get_device_manager = None
+
+# Question classifier (Phase 0)
+try:
+    from src.transcription import get_classifier
+    QUESTION_CLASSIFIER_AVAILABLE = True
+except ImportError:
+    # Fallback if classifier not available
+    QUESTION_CLASSIFIER_AVAILABLE = False
+    get_classifier = None
+
+# Answer persistence (Phase 0)
+try:
+    from src.server.answer_persistence import get_persistence_manager
+    ANSWER_PERSISTENCE_AVAILABLE = True
+except ImportError:
+    # Fallback if persistence not available
+    ANSWER_PERSISTENCE_AVAILABLE = False
+    get_persistence_manager = None
+
 # ========================
 # Configuration
 # ========================
@@ -737,7 +764,146 @@ async def handler(ws: websockets.WebSocketServerProtocol):
                         async with audio_lock: pcm_buf.clear(); bytes_since_last = 0
                         reset_state()
                         log("ws", "info", "reset_completed")
-                except Exception: pass
+                    elif cmd == "get_settings":
+                        # Return current settings
+                        await ws.send(json.dumps({
+                            "settings": {
+                                "mic_enabled": getattr(client, "mic_enabled", True),
+                                "transcription_enabled": getattr(client, "transcription_enabled", True),
+                                "answers_enabled": getattr(client, "answers_enabled", True),
+                                "whisper_model": WHISPER_MODEL if "WHISPER_MODEL" in globals() else "base",
+                                "ollama_model": OLLAMA_MODEL_CLOUD if "OLLAMA_MODEL_CLOUD" in globals() else "gpt-oss:120b-cloud",
+                                "audio_device": "0",
+                                "filter_greetings": True,
+                            }
+                        }))
+                    elif cmd == "set_setting":
+                        # Update a setting
+                        setting_name = data.get("name", "").lower()
+                        setting_value = data.get("value")
+
+                        if setting_name in ("mic_enabled", "transcription_enabled", "answers_enabled"):
+                            setattr(client, setting_name, bool(setting_value))
+                            log("ws", "info", f"setting_updated", setting=setting_name, value=setting_value)
+                            await ws.send(json.dumps({"setting_updated": {setting_name: setting_value}}))
+                    elif cmd == "get_devices":
+                        # Return available audio devices
+                        if AUDIO_DEVICE_MANAGER_AVAILABLE and get_device_manager:
+                            device_mgr = get_device_manager()
+                            await ws.send(json.dumps({
+                                "devices": device_mgr.get_status()
+                            }))
+                        else:
+                            await ws.send(json.dumps({
+                                "devices": {"error": "Audio device manager not available"}
+                            }))
+                    elif cmd == "set_device":
+                        # Switch audio device
+                        device_id = data.get("device_id", "")
+                        if AUDIO_DEVICE_MANAGER_AVAILABLE and get_device_manager:
+                            device_mgr = get_device_manager()
+                            success = device_mgr.set_device(device_id)
+                            log("ws", "info", "audio_device_switched", device=device_id, success=success)
+                            await ws.send(json.dumps({
+                                "device_set": {"device_id": device_id, "success": success}
+                            }))
+                        else:
+                            await ws.send(json.dumps({
+                                "device_set": {"error": "Audio device manager not available"}
+                            }))
+                    elif cmd == "refresh_devices":
+                        # Refresh available devices list
+                        if AUDIO_DEVICE_MANAGER_AVAILABLE and get_device_manager:
+                            device_mgr = get_device_manager()
+                            success = await device_mgr.refresh_devices()
+                            log("ws", "info", "audio_devices_refreshed", success=success)
+                            await ws.send(json.dumps({
+                                "devices_refreshed": {"success": success, "status": device_mgr.get_status()}
+                            }))
+                        else:
+                            await ws.send(json.dumps({
+                                "devices_refreshed": {"error": "Audio device manager not available"}
+                            }))
+                    elif cmd == "classify_question":
+                        # Classify a question
+                        question = data.get("question", "")
+                        if QUESTION_CLASSIFIER_AVAILABLE and get_classifier:
+                            classifier = get_classifier()
+                            result = classifier.classify(question)
+                            log("ws", "info", "question_classified", question_type=result["type"])
+                            await ws.send(json.dumps({
+                                "classification": result
+                            }))
+                        else:
+                            await ws.send(json.dumps({
+                                "classification": {"error": "Question classifier not available"}
+                            }))
+                    elif cmd == "get_classifier_stats":
+                        # Get classifier statistics
+                        if QUESTION_CLASSIFIER_AVAILABLE and get_classifier:
+                            classifier = get_classifier()
+                            stats = classifier.get_stats()
+                            await ws.send(json.dumps({
+                                "classifier_stats": stats
+                            }))
+                        else:
+                            await ws.send(json.dumps({
+                                "classifier_stats": {"error": "Question classifier not available"}
+                            }))
+                    elif cmd == "pin_answer":
+                        # Pin an answer
+                        answer_id = data.get("answer_id", "")
+                        if ANSWER_PERSISTENCE_AVAILABLE and get_persistence_manager:
+                            pm = get_persistence_manager()
+                            success = pm.pin_answer(answer_id)
+                            log("ws", "info", "answer_pinned", answer_id=answer_id, success=success)
+                            await ws.send(json.dumps({
+                                "answer_pinned": {"answer_id": answer_id, "success": success}
+                            }))
+                        else:
+                            await ws.send(json.dumps({
+                                "answer_pinned": {"error": "Answer persistence not available"}
+                            }))
+                    elif cmd == "dismiss_answer":
+                        # Dismiss an answer
+                        answer_id = data.get("answer_id", "")
+                        if ANSWER_PERSISTENCE_AVAILABLE and get_persistence_manager:
+                            pm = get_persistence_manager()
+                            success = pm.dismiss_answer(answer_id)
+                            log("ws", "info", "answer_dismissed", answer_id=answer_id, success=success)
+                            await ws.send(json.dumps({
+                                "answer_dismissed": {"answer_id": answer_id, "success": success}
+                            }))
+                        else:
+                            await ws.send(json.dumps({
+                                "answer_dismissed": {"error": "Answer persistence not available"}
+                            }))
+                    elif cmd == "get_pinned_answers":
+                        # Get all pinned answers
+                        if ANSWER_PERSISTENCE_AVAILABLE and get_persistence_manager:
+                            pm = get_persistence_manager()
+                            pinned = [a.to_dict() for a in pm.get_pinned_answers()]
+                            await ws.send(json.dumps({
+                                "pinned_answers": pinned
+                            }))
+                        else:
+                            await ws.send(json.dumps({
+                                "pinned_answers": {"error": "Answer persistence not available"}
+                            }))
+                    elif cmd == "get_persistence_status":
+                        # Get persistence status
+                        if ANSWER_PERSISTENCE_AVAILABLE and get_persistence_manager:
+                            pm = get_persistence_manager()
+                            status = pm.get_status()
+                            await ws.send(json.dumps({
+                                "persistence_status": status
+                            }))
+                        else:
+                            await ws.send(json.dumps({
+                                "persistence_status": {"error": "Answer persistence not available"}
+                            }))
+                except Exception as e:
+                    if DEBUG: log("ws", "debug", "message_error", error=str(e))
     except (websockets.ConnectionClosedOK, websockets.ConnectionClosedError): pass
     finally:
         clients.pop(ws, None)

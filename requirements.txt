@@ -16,8 +16,12 @@ ollama
 websockets
 numpy
 
-# Audio Processing (if needed for additional features)
-# pyaudio  # Uncomment if you need direct audio device access
+# Audio Processing
+pyaudio
+librosa
+
+# Desktop App (Phase 0)
+rumps
 
 # Structured Logging (Phase 1)
 structlog

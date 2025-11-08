@@ -1,10 +1,13 @@
 # Environment variables
 .env
+.env.local
+.env.*.local
 
 # Virtual environment
 venv/
 env/
 ENV/
+.venv/
 
 # Python cache
 __pycache__/
@@ -12,30 +15,71 @@ __pycache__/
 *.pyo
 *.pyd
 .Python
+*.egg-info/
+dist/
+build/
 
-# IDE
+# IDE & Editor
 .vscode/
 .idea/
 *.swp
 *.swo
+*.iml
+*.sublime-project
+*.sublime-workspace
 
 # OS
 .DS_Store
 Thumbs.db
+.AppleDouble
+.LSOverride
 
-# Logs
+# Logs and artifacts
 *.log
+logs/
+*.log.*
+
+# Test coverage
+.coverage
+.coverage.*
+coverage/
+htmlcov/
+.pytest_cache/
+
+# Development tools
+.claude/
+.mcp.json
+mcp.json
 
 # Audio files (if large)
 *.wav
 *.mp3
 *.flac
 *.ogg
-.DS_Store
-.kiro/specs/lightweight-interview-assistant/design.md
-.kiro/specs/lightweight-interview-assistant/requirements.md
-.kiro/specs/lightweight-interview-assistant/tasks.md
-.kiro/steering/product.md
-.kiro/steering/structure.md
-.kiro/steering/tech.md
+*.m4a
+*.aac
+
+# Old configs/specs
+.kiro/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*~
+
+# macOS specific
+.AppleDouble
+.LSOverride
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+
+# IDE settings
 .vscode/settings.json
+.idea/workspace.xml
+
+# Auto-generated
+app-bundle.zip
+status.md
+WORK_COMPLETED.md

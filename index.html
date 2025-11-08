@@ -398,7 +398,16 @@
         <div class="panel">
             <div class="panel-header">
                 <span>📝 Transcript</span>
-                <span id="transcript-info">Waiting for audio...</span>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <!-- Audio Level Meter -->
+                    <div id="vu-meter-container" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.7rem;">
+                        <div id="vu-bar" style="width: 60px; height: 8px; background: rgba(0,0,0,0.5); border-radius: 4px; overflow: hidden;">
+                            <div id="vu-level" style="height: 100%; background: linear-gradient(90deg, #00ff88 0%, #ffd93d 50%, #ff6b6b 100%); width: 0%; transition: width 0.1s;"></div>
+                        </div>
+                        <span id="vu-text" style="color: #aaa; width: 30px;">--dB</span>
+                    </div>
+                    <span id="transcript-info">Waiting for audio...</span>
+                </div>
             </div>
             <div class="panel-content">
                 <div id="transcript-log" class="transcript-log">
@@ -421,6 +430,11 @@
                     <div style="text-align: center; color: #888; margin-top: 2rem;">
                         Select a question from the right panel or ask a new one to see the detailed answer here.
                     </div>
+                </div>
+                <!-- Answer Actions -->
+                <div id="answer-actions" style="position: absolute; bottom: 1rem; left: 1rem; right: 1rem; display: flex; gap: 0.5rem; visibility: hidden;">
+                    <button id="pin-btn" class="control-btn" style="flex: 1; padding: 0.5rem;" onclick="pinCurrentAnswer()" title="Pin this answer (shift+p)">📌 Pin</button>
+                    <button id="dismiss-btn" class="control-btn" style="flex: 1; padding: 0.5rem;" onclick="dismissCurrentAnswer()" title="Dismiss this answer (shift+d)">✕ Dismiss</button>
                 </div>
             </div>
         </div>
@@ -448,6 +462,8 @@
         <button class="control-btn" onclick="askQuestion()" title="Ask a question (a)">❓ Ask</button>
         <button class="control-btn" onclick="resetView()" title="Reset view (r)">🔄 Reset</button>
         <button class="control-btn" onclick="saveSnapshot()" title="Save snapshot (s)">💾 Save</button>
+        <button class="control-btn" onclick="openSettings()" title="Open settings (~)">⚙️ Settings</button>
+        <button class="control-btn" onclick="toggleLogsPanel()" title="Toggle logs viewer (l)">📋 Logs</button>
     </div>
 
     <!-- Ask Modal -->
@@ -458,6 +474,226 @@
             <div class="modal-buttons">
                 <button class="control-btn" onclick="closeAskModal()">Cancel</button>
                 <button class="control-btn" onclick="submitQuestion()">Ask</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal-overlay">
+        <div class="modal">
+            <h3>⚙️ Settings</h3>
+
+            <!-- Audio Device Selection -->
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-size: 0.9rem; color: #00d4ff;">Audio Input Device</label>
+                <select id="audio-device-select" style="width: 100%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 0.75rem; color: #e6e6e6; font-family: inherit;">
+                    <option>Loading devices...</option>
+                </select>
+            </div>
+
+            <!-- Whisper Model Selection -->
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-size: 0.9rem; color: #00d4ff;">Whisper Model</label>
+                <select id="whisper-model-select" style="width: 100%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 0.75rem; color: #e6e6e6; font-family: inherit;">
+                    <option value="tiny">Tiny (fastest, least accurate)</option>
+                    <option value="base" selected>Base (balanced)</option>
+                    <option value="small">Small (better accuracy)</option>
+                    <option value="medium">Medium (high accuracy)</option>
+                    <option value="large">Large (highest accuracy, slowest)</option>
+                </select>
+            </div>
+
+            <!-- Ollama Model Selection -->
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-size: 0.9rem; color: #00d4ff;">LLM Model</label>
+                <select id="ollama-model-select" style="width: 100%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 0.75rem; color: #e6e6e6; font-family: inherit;">
+                    <option value="gpt-oss:120b-cloud" selected>GPT-OSS 120B Cloud</option>
+                    <option value="llama2">Llama 2</option>
+                    <option value="mistral">Mistral</option>
+                    <option value="neural-chat">Neural Chat</option>
+                </select>
+            </div>
+
+            <!-- Feature Toggles -->
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; cursor: pointer; font-size: 0.9rem;">
+                    <input type="checkbox" id="filter-greetings-toggle" checked onchange="updateSetting('filter_greetings', this.checked)" />
+                    <span>Filter greeting questions</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; cursor: pointer; font-size: 0.9rem;">
+                    <input type="checkbox" id="transcription-toggle" checked onchange="updateSetting('transcription_enabled', this.checked)" />
+                    <span>Enable transcription</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.9rem;">
+                    <input type="checkbox" id="answers-toggle" checked onchange="updateSetting('answers_enabled', this.checked)" />
+                    <span>Enable AI answers</span>
+                </label>
+            </div>
+
+            <!-- Buttons -->
+            <div class="modal-buttons">
+                <button class="control-btn" onclick="closeSettings()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logs Viewer Modal -->
+    <div id="logs-modal" class="modal-overlay">
+        <div class="modal" style="max-width: 800px; max-height: 80vh; display: flex; flex-direction: column;">
+            <h3>📋 Logs Viewer</h3>
+
+            <!-- Logs Filter -->
+            <div style="margin-bottom: 1rem; display: flex; gap: 0.5rem;">
+                <input type="text" id="logs-filter" placeholder="Search logs..." style="flex: 1; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 0.5rem; color: #e6e6e6; font-family: inherit;" />
+                <select id="logs-level-filter" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 0.5rem; color: #e6e6e6; font-family: inherit;">
+                    <option value="">All Levels</option>
+                    <option value="error">Error</option>
+                    <option value="warning">Warning</option>
+                    <option value="info">Info</option>
+                    <option value="debug">Debug</option>
+                </select>
+                <button class="control-btn" onclick="clearLogs()" style="padding: 0.5rem 1rem;">Clear</button>
+            </div>
+
+            <!-- Logs Content -->
+            <div id="logs-content" style="flex: 1; overflow-y: auto; background: rgba(0,0,0,0.3); border-radius: 6px; padding: 1rem; font-size: 0.8rem; font-family: 'SF Mono', monospace; color: #aaa; line-height: 1.4; border: 1px solid rgba(255,255,255,0.1);">
+                <div style="text-align: center; color: #666;">No logs yet...</div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="modal-buttons" style="margin-top: 1rem;">
+                <button class="control-btn" onclick="exportLogs()">📥 Export</button>
+                <button class="control-btn" onclick="closeLogs()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Latency Dashboard Modal -->
+    <div id="latency-modal" class="modal-overlay">
+        <div class="modal" style="max-width: 900px; max-height: 80vh; display: flex; flex-direction: column;">
+            <h3>⚡ Latency Dashboard</h3>
+
+            <!-- Dashboard Info -->
+            <div id="latency-stats" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                <div style="background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.3); border-radius: 6px; padding: 1rem;">
+                    <div style="font-size: 0.8rem; color: #888;">Avg Latency</div>
+                    <div id="avg-latency" style="font-size: 1.5rem; color: #00d4ff; font-weight: bold;">--ms</div>
+                </div>
+                <div style="background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.3); border-radius: 6px; padding: 1rem;">
+                    <div style="font-size: 0.8rem; color: #888;">P95 Latency</div>
+                    <div id="p95-latency" style="font-size: 1.5rem; color: #00ff88; font-weight: bold;">--ms</div>
+                </div>
+                <div style="background: rgba(255,217,61,0.1); border: 1px solid rgba(255,217,61,0.3); border-radius: 6px; padding: 1rem;">
+                    <div style="font-size: 0.8rem; color: #888;">Samples</div>
+                    <div id="sample-count" style="font-size: 1.5rem; color: #ffd93d; font-weight: bold;">0</div>
+                </div>
+            </div>
+
+            <!-- Model Comparison -->
+            <div id="model-comparison" style="flex: 1; overflow-y: auto; background: rgba(0,0,0,0.3); border-radius: 6px; padding: 1rem; border: 1px solid rgba(255,255,255,0.1);">
+                <table style="width: 100%; font-size: 0.85rem; color: #aaa;">
+                    <thead style="border-bottom: 1px solid rgba(255,255,255,0.2); margin-bottom: 1rem;">
+                        <tr>
+                            <th style="text-align: left; padding-bottom: 0.5rem; color: #00d4ff;">Model</th>
+                            <th style="text-align: right; padding-bottom: 0.5rem; color: #00d4ff;">Avg (ms)</th>
+                            <th style="text-align: right; padding-bottom: 0.5rem; color: #00d4ff;">Min (ms)</th>
+                            <th style="text-align: right; padding-bottom: 0.5rem; color: #00d4ff;">Max (ms)</th>
+                            <th style="text-align: right; padding-bottom: 0.5rem; color: #00d4ff;">Count</th>
+                        </tr>
+                    </thead>
+                    <tbody id="model-table-body">
+                        <tr><td colspan="5" style="text-align: center; color: #666; padding: 1rem;">No latency data yet</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Buttons -->
+            <div class="modal-buttons" style="margin-top: 1rem;">
+                <button class="control-btn" onclick="resetLatencyMetrics()">🔄 Reset</button>
+                <button class="control-btn" onclick="closeLatency()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help / Keyboard Shortcuts Modal -->
+    <div id="help-modal" class="modal-overlay">
+        <div class="modal" style="max-width: 700px;">
+            <h3>⌨️ Keyboard Shortcuts</h3>
+
+            <div style="font-size: 0.9rem; color: #aaa; max-height: 60vh; overflow-y: auto;">
+                <div style="margin-bottom: 1.5rem;">
+                    <h4 style="color: #00d4ff; margin-bottom: 0.75rem;">Navigation & Control</h4>
+                    <div style="display: grid; gap: 0.5rem;">
+                        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+                            <span><kbd style="background: rgba(0,212,255,0.2); padding: 0.25rem 0.5rem; border-radius: 4px; color: #00d4ff;">a</kbd> Ask a question</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+                            <span><kbd style="background: rgba(0,212,255,0.2); padding: 0.25rem 0.5rem; border-radius: 4px; color: #00d4ff;">g</kbd> Scroll to top</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+                            <span><kbd style="background: rgba(0,212,255,0.2); padding: 0.25rem 0.5rem; border-radius: 4px; color: #00d4ff;">Shift+G</kbd> Scroll to end</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+                            <span><kbd style="background: rgba(0,212,255,0.2); padding: 0.25rem 0.5rem; border-radius: 4px; color: #00d4ff;">j</kbd> Select next Q&A</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+                            <span><kbd style="background: rgba(0,212,255,0.2); padding: 0.25rem 0.5rem; border-radius: 4px; color: #00d4ff;">k</kbd> Select previous Q&A</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <h4 style="color: #00d4ff; margin-bottom: 0.75rem;">Panels & Views</h4>
+                    <div style="display: grid; gap: 0.5rem;">
+                        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+                            <span><kbd style="background: rgba(0,212,255,0.2); padding: 0.25rem 0.5rem; border-radius: 4px; color: #00d4ff;">~</kbd> Open settings</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+                            <span><kbd style="background: rgba(0,212,255,0.2); padding: 0.25rem 0.5rem; border-radius: 4px; color: #00d4ff;">l</kbd> Toggle logs viewer</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+                            <span><kbd style="background: rgba(0,212,255,0.2); padding: 0.25rem 0.5rem; border-radius: 4px; color: #00d4ff;">m</kbd> Toggle latency dashboard</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+                            <span><kbd style="background: rgba(0,212,255,0.2); padding: 0.25rem 0.5rem; border-radius: 4px; color: #00d4ff;">h</kbd> Show this help</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <h4 style="color: #00d4ff; margin-bottom: 0.75rem;">Display Options</h4>
+                    <div style="display: grid; gap: 0.5rem;">
+                        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+                            <span><kbd style="background: rgba(0,212,255,0.2); padding: 0.25rem 0.5rem; border-radius: 4px; color: #00d4ff;">p</kbd> Toggle auto-scroll</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+                            <span><kbd style="background: rgba(0,212,255,0.2); padding: 0.25rem 0.5rem; border-radius: 4px; color: #00d4ff;">f</kbd> Toggle follow mode</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+                            <span><kbd style="background: rgba(0,212,255,0.2); padding: 0.25rem 0.5rem; border-radius: 4px; color: #00d4ff;">r</kbd> Reset view</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+                            <span><kbd style="background: rgba(0,212,255,0.2); padding: 0.25rem 0.5rem; border-radius: 4px; color: #00d4ff;">s</kbd> Save snapshot</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <h4 style="color: #00d4ff; margin-bottom: 0.75rem;">Answer Actions</h4>
+                    <div style="display: grid; gap: 0.5rem;">
+                        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+                            <span><kbd style="background: rgba(0,212,255,0.2); padding: 0.25rem 0.5rem; border-radius: 4px; color: #00d4ff;">Shift+P</kbd> Pin answer</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+                            <span><kbd style="background: rgba(0,212,255,0.2); padding: 0.25rem 0.5rem; border-radius: 4px; color: #00d4ff;">Shift+D</kbd> Dismiss answer</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="modal-buttons">
+                <button class="control-btn" onclick="closeHelp()">Close</button>
             </div>
         </div>
     </div>
@@ -489,21 +725,31 @@
             setupKeyboardShortcuts() {
                 document.addEventListener('keydown', (e) => {
                     if (e.target.tagName === 'INPUT') return;
-                    
+
+                    // Handle shift combinations first
+                    if (e.shiftKey) {
+                        switch(e.key.toUpperCase()) {
+                            case 'P': pinCurrentAnswer(); return;
+                            case 'D': dismissCurrentAnswer(); return;
+                            case 'G': this.scrollTranscriptEnd(); return;
+                        }
+                    }
+
+                    // Handle regular keys
                     switch(e.key.toLowerCase()) {
                         case 'a': this.askQuestion(); break;
                         case 'p': this.toggleAutoScroll(); break;
                         case 'f': this.toggleFollow(); break;
                         case 'r': this.resetView(); break;
                         case 's': this.saveSnapshot(); break;
+                        case 'l': toggleLogsPanel(); break;
+                        case 'm': toggleLatencyPanel(); break;
+                        case 'h': toggleHelpPanel(); break;
+                        case '~': case '`': openSettings(); break;
                         case 'g': this.scrollTranscriptHome(); break;
                         case 'j': this.selectNext(); break;
                         case 'k': this.selectPrevious(); break;
                         case 'escape': this.closeAskModal(); break;
-                    }
-                    
-                    if (e.key === 'G' && e.shiftKey) {
-                        this.scrollTranscriptEnd();
                     }
                 });
             }
@@ -1125,6 +1371,290 @@
             panel.submitQuestion();
         }
 
+        function openSettings() {
+            // Load audio devices when opening settings
+            if (panel.ws && panel.ws.readyState === WebSocket.OPEN) {
+                panel.ws.send(JSON.stringify({ cmd: 'get_devices' }));
+            }
+            document.getElementById('settings-modal').classList.add('show');
+        }
+
+        function closeSettings() {
+            document.getElementById('settings-modal').classList.remove('show');
+        }
+
+        function updateSetting(key, value) {
+            if (panel.ws && panel.ws.readyState === WebSocket.OPEN) {
+                panel.ws.send(JSON.stringify({
+                    cmd: 'set_setting',
+                    name: key,
+                    value: value
+                }));
+            }
+        }
+
+        let currentAnswerId = null;
+
+        function pinCurrentAnswer() {
+            if (currentAnswerId && panel.ws && panel.ws.readyState === WebSocket.OPEN) {
+                panel.ws.send(JSON.stringify({
+                    cmd: 'pin_answer',
+                    answer_id: currentAnswerId
+                }));
+                console.log('Answer pinned:', currentAnswerId);
+                updatePinButtonState();
+            }
+        }
+
+        function dismissCurrentAnswer() {
+            if (currentAnswerId && panel.ws && panel.ws.readyState === WebSocket.OPEN) {
+                panel.ws.send(JSON.stringify({
+                    cmd: 'dismiss_answer',
+                    answer_id: currentAnswerId
+                }));
+                console.log('Answer dismissed:', currentAnswerId);
+                updatePinButtonState();
+            }
+        }
+
+        function updatePinButtonState() {
+            const pinBtn = document.getElementById('pin-btn');
+            const dismissBtn = document.getElementById('dismiss-btn');
+            if (currentAnswerId) {
+                pinBtn.style.visibility = 'visible';
+                dismissBtn.style.visibility = 'visible';
+                document.getElementById('answer-actions').style.visibility = 'visible';
+            } else {
+                document.getElementById('answer-actions').style.visibility = 'hidden';
+            }
+        }
+
+        function updateVUMeter(data) {
+            if (!data || !data.audio_level) return;
+
+            const level = data.audio_level;
+            const rmsDb = Math.max(-80, Math.min(0, level.rms_db || -80));
+
+            // Convert dB (-80 to 0) to percentage (0 to 100)
+            const percentage = ((rmsDb + 80) / 80) * 100;
+
+            // Update bar width
+            const vuBar = document.getElementById('vu-level');
+            if (vuBar) {
+                vuBar.style.width = Math.max(0, Math.min(100, percentage)) + '%';
+
+                // Change color based on level
+                if (percentage < 30) {
+                    vuBar.style.background = 'linear-gradient(90deg, #00ff88 0%, #00ff88 100%)';
+                } else if (percentage < 70) {
+                    vuBar.style.background = 'linear-gradient(90deg, #00ff88 0%, #ffd93d 100%)';
+                } else {
+                    vuBar.style.background = 'linear-gradient(90deg, #ffd93d 0%, #ff6b6b 100%)';
+                }
+            }
+
+            // Update text
+            const vuText = document.getElementById('vu-text');
+            if (vuText) {
+                vuText.textContent = rmsDb.toFixed(1) + 'dB';
+            }
+        }
+
+        const logs = [];
+
+        function addLog(level, message, data = {}) {
+            const timestamp = new Date().toLocaleTimeString();
+            logs.push({
+                timestamp,
+                level,
+                message,
+                data: JSON.stringify(data)
+            });
+            // Keep only last 500 logs
+            if (logs.length > 500) logs.shift();
+            updateLogsDisplay();
+        }
+
+        function updateLogsDisplay() {
+            const filterText = document.getElementById('logs-filter')?.value || '';
+            const filterLevel = document.getElementById('logs-level-filter')?.value || '';
+
+            const filtered = logs.filter(log => {
+                const textMatch = log.message.toLowerCase().includes(filterText.toLowerCase());
+                const levelMatch = !filterLevel || log.level === filterLevel;
+                return textMatch && levelMatch;
+            });
+
+            const content = document.getElementById('logs-content');
+            if (!content || filtered.length === 0) return;
+
+            content.innerHTML = filtered.map(log => {
+                const color = {
+                    error: '#ff6b6b',
+                    warning: '#ffd93d',
+                    info: '#00d4ff',
+                    debug: '#888'
+                }[log.level] || '#aaa';
+
+                return `<div style="color: ${color};">[${log.timestamp}] ${log.level.toUpperCase()}: ${log.message}</div>`;
+            }).join('');
+
+            // Auto-scroll to bottom
+            content.scrollTop = content.scrollHeight;
+        }
+
+        function toggleLogsPanel() {
+            const modal = document.getElementById('logs-modal');
+            modal?.classList.toggle('show');
+        }
+
+        function closeLogs() {
+            document.getElementById('logs-modal')?.classList.remove('show');
+        }
+
+        function clearLogs() {
+            logs.length = 0;
+            updateLogsDisplay();
+        }
+
+        function exportLogs() {
+            const csv = ['timestamp,level,message'].concat(
+                logs.map(l => `"${l.timestamp}","${l.level}","${l.message.replace(/"/g, '""')}"`)
+            ).join('\n');
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `logs_${new Date().toISOString()}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Latency dashboard management
+        const latencyMetrics = {};
+
+        function toggleLatencyPanel() {
+            const modal = document.getElementById('latency-modal');
+            modal?.classList.toggle('show');
+            if (modal?.classList.contains('show')) {
+                updateLatencyDisplay();
+            }
+        }
+
+        function closeLatency() {
+            document.getElementById('latency-modal')?.classList.remove('show');
+        }
+
+        function recordLatency(modelName, latencyMs) {
+            if (!latencyMetrics[modelName]) {
+                latencyMetrics[modelName] = {
+                    samples: [],
+                    count: 0,
+                    min: Infinity,
+                    max: -Infinity,
+                    sum: 0
+                };
+            }
+
+            const metric = latencyMetrics[modelName];
+            metric.samples.push(latencyMs);
+            metric.count++;
+            metric.sum += latencyMs;
+            metric.min = Math.min(metric.min, latencyMs);
+            metric.max = Math.max(metric.max, latencyMs);
+
+            // Keep last 100 samples
+            if (metric.samples.length > 100) {
+                metric.samples.shift();
+            }
+        }
+
+        function getLatencyStats(modelName) {
+            if (!latencyMetrics[modelName] || latencyMetrics[modelName].count === 0) {
+                return null;
+            }
+
+            const metric = latencyMetrics[modelName];
+            const sorted = [...metric.samples].sort((a, b) => a - b);
+            const p95Index = Math.ceil(sorted.length * 0.95) - 1;
+
+            return {
+                model: modelName,
+                avg: (metric.sum / metric.count).toFixed(0),
+                min: metric.min.toFixed(0),
+                max: metric.max.toFixed(0),
+                p95: sorted[Math.max(0, p95Index)].toFixed(0),
+                count: metric.count
+            };
+        }
+
+        function updateLatencyDisplay() {
+            const avgElement = document.getElementById('avg-latency');
+            const p95Element = document.getElementById('p95-latency');
+            const countElement = document.getElementById('sample-count');
+            const tableBody = document.getElementById('latency-table-body');
+
+            if (!avgElement || !p95Element || !countElement || !tableBody) {
+                return;
+            }
+
+            // Calculate overall stats
+            let totalLatency = 0;
+            let totalSamples = 0;
+            let allSamples = [];
+
+            Object.keys(latencyMetrics).forEach(model => {
+                latencyMetrics[model].samples.forEach(sample => {
+                    allSamples.push(sample);
+                    totalLatency += sample;
+                    totalSamples++;
+                });
+            });
+
+            const overallAvg = totalSamples > 0 ? (totalLatency / totalSamples).toFixed(0) : 0;
+            const sortedSamples = allSamples.sort((a, b) => a - b);
+            const p95Index = Math.ceil(sortedSamples.length * 0.95) - 1;
+            const overallP95 = sortedSamples.length > 0 ? sortedSamples[Math.max(0, p95Index)].toFixed(0) : 0;
+
+            avgElement.textContent = overallAvg;
+            p95Element.textContent = overallP95;
+            countElement.textContent = totalSamples;
+
+            // Update model comparison table
+            tableBody.innerHTML = '';
+            Object.keys(latencyMetrics).forEach(model => {
+                const stats = getLatencyStats(model);
+                if (stats) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${model}</td>
+                        <td>${stats.avg}ms</td>
+                        <td>${stats.min}ms</td>
+                        <td>${stats.max}ms</td>
+                        <td>${stats.count}</td>
+                    `;
+                    tableBody.appendChild(row);
+                }
+            });
+        }
+
+        function resetLatencyMetrics() {
+            Object.keys(latencyMetrics).forEach(key => {
+                delete latencyMetrics[key];
+            });
+            updateLatencyDisplay();
+        }
+
+        function toggleHelpPanel() {
+            const modal = document.getElementById('help-modal');
+            modal?.classList.toggle('show');
+        }
+
+        function closeHelp() {
+            document.getElementById('help-modal')?.classList.remove('show');
+        }
+
         // Initialize the application
         document.addEventListener('DOMContentLoaded', () => {
             panel = new STTInterviewPanel();
@@ -1144,6 +1674,71 @@
                     closeAskModal();
                 }
             });
+
+            // Close settings modal when clicking outside
+            document.getElementById('settings-modal').addEventListener('click', (e) => {
+                if (e.target.classList.contains('modal-overlay')) {
+                    closeSettings();
+                }
+            });
+
+            // Close logs modal when clicking outside
+            document.getElementById('logs-modal').addEventListener('click', (e) => {
+                if (e.target.classList.contains('modal-overlay')) {
+                    closeLogs();
+                }
+            });
+
+            // Close latency modal when clicking outside
+            document.getElementById('latency-modal').addEventListener('click', (e) => {
+                if (e.target.classList.contains('modal-overlay')) {
+                    closeLatency();
+                }
+            });
+
+            // Close help modal when clicking outside
+            document.getElementById('help-modal').addEventListener('click', (e) => {
+                if (e.target.classList.contains('modal-overlay')) {
+                    closeHelp();
+                }
+            });
+
+            // Add logs filter listeners
+            document.getElementById('logs-filter')?.addEventListener('input', updateLogsDisplay);
+            document.getElementById('logs-level-filter')?.addEventListener('change', updateLogsDisplay);
+
+            // Handle setting changes from WebSocket
+            const originalOnMessage = panel.ws.onmessage;
+            panel.ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+
+                // Handle device list update
+                if (data.devices) {
+                    const select = document.getElementById('audio-device-select');
+                    if (data.devices.devices) {
+                        select.innerHTML = '';
+                        data.devices.devices.forEach(device => {
+                            const option = document.createElement('option');
+                            option.value = device.index;
+                            option.textContent = device.name;
+                            select.appendChild(option);
+                        });
+                        select.addEventListener('change', (e) => {
+                            updateSetting('audio_device', e.target.value);
+                        });
+                    }
+                }
+
+                // Handle model selection
+                if (data.setting_updated) {
+                    console.log('Setting updated:', data.setting_updated);
+                }
+
+                // Call original handler
+                if (originalOnMessage) {
+                    originalOnMessage.call(panel.ws, event);
+                }
+            };
         });
     </script>
 </body>
