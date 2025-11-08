@@ -156,6 +156,27 @@ source venv/bin/activate  # macOS/Linux
 python --version  # Should be 3.8+
 ```
 
+#### Reset Virtual Environment (Start Over)
+
+If you need to remove the venv and start fresh:
+
+```bash
+# First, deactivate if currently active (you'll see (venv) in prompt)
+deactivate
+
+# Remove the entire venv directory
+rm -rf venv  # macOS/Linux
+# or
+rmdir /s venv  # Windows (with /s for recursive)
+
+# Verify it's gone
+ls -la | grep venv  # Should return nothing
+
+# Now create a fresh venv and continue with Step 4
+python3 -m venv venv
+source venv/bin/activate  # macOS/Linux or .\venv\Scripts\activate on Windows
+```
+
 ### Step 4: Install Python Dependencies
 
 ```bash

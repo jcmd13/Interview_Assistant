@@ -18,6 +18,8 @@ source venv/bin/activate  # macOS/Linux
 # You should see (venv) in your prompt
 ```
 
+**Note:** If you need to reset the virtual environment and start fresh, see [Reset Virtual Environment](#reset-virtual-environment-start-over) section below.
+
 ### 1. Start the Plugin-Aware Server
 
 ```bash
@@ -130,6 +132,40 @@ Real-time indicators for:
 - LLM Analyzer status
 - Plugin Manager status
 - Settings Manager status
+
+---
+
+## Reset Virtual Environment (Start Over)
+
+If you need to remove the venv and start completely fresh (following the setup instructions from scratch):
+
+```bash
+# Step 1: If venv is currently active, deactivate it
+deactivate
+
+# Step 2: Remove the entire venv directory
+rm -rf venv  # macOS/Linux
+# or
+rmdir /s venv  # Windows
+
+# Step 3: Verify it's gone
+ls -la | grep venv  # Should return nothing
+
+# Step 4: Create a fresh venv
+python3 -m venv venv
+
+# Step 5: Activate the new venv
+source venv/bin/activate  # macOS/Linux
+# or
+.\venv\Scripts\activate   # Windows
+
+# Step 6: Install dependencies
+pip install -r requirements.txt
+
+# Step 7: You can now follow the Quick Start steps again
+```
+
+This gives you a clean environment with all dependencies freshly installed.
 
 ---
 
