@@ -92,29 +92,49 @@ See `requirements.txt` for full list. Key packages:
 
 **macOS:**
 ```bash
-# Install FFmpeg
-brew install ffmpeg
+# REQUIRED: System dependencies for audio and build tools
+brew install pkg-config         # Required for building PyAV
+brew install portaudio          # Required for PyAudio (microphone input)
+brew install ffmpeg             # Required for audio capture
 
-# Install Python 3.9+ if needed
-brew install python@3.11
+# REQUIRED: Python interpreter
+brew install python@3.11        # Python 3.9+ required
 
-# Install Ollama
-brew install ollama
+# REQUIRED: LLM service
+brew install ollama             # Required for running local LLM models
 
-# (Optional) Install websocat for debugging
-brew install websocat
+# OPTIONAL: For debugging
+brew install websocat           # WebSocket testing tool (optional)
+
+# NOTES:
+# - pkg-config and portaudio are system dependencies needed by pip during installation
+# - These must be installed BEFORE running 'pip install -r requirements.txt'
+# - If you skip these, pip will fail with build errors
 ```
 
 **Ubuntu/Debian:**
 ```bash
+# Update package lists
 sudo apt update
-sudo apt install -y ffmpeg python3.9 python3-pip
 
-# Install Ollama
+# REQUIRED: System dependencies for audio and build tools
+sudo apt install -y \
+    pkg-config              # Required for building PyAV
+    portaudio19-dev         # Required for PyAudio (microphone input)
+    ffmpeg                  # Required for audio capture
+    python3.9 python3-pip   # Python interpreter and pip
+    build-essential         # C/C++ compilers for building packages
+
+# REQUIRED: LLM service
 curl https://ollama.ai/install.sh | sh
 
-# (Optional) Install websocat
-cargo install websocat  # requires Rust
+# OPTIONAL: For debugging
+# cargo install websocat  # requires Rust to be installed
+
+# NOTES:
+# - pkg-config and portaudio19-dev are system dependencies needed by pip during installation
+# - build-essential provides gcc/g++ needed for compiling C extensions
+# - These must be installed BEFORE running 'pip install -r requirements.txt'
 ```
 
 **Windows (WSL2 Recommended):**
