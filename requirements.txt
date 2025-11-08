@@ -1,0 +1,38 @@
+# requirements.txt
+
+# Core ML/AI Libraries
+# PyTorch with CPU support (change to CUDA if you have GPU)
+torch --index-url https://download.pytorch.org/whl/cpu
+torchvision --index-url https://download.pytorch.org/whl/cpu
+torchaudio --index-url https://download.pytorch.org/whl/cpu
+
+# Speech Recognition
+faster-whisper
+
+# LLM Integration - Ollama
+ollama
+
+# Networking and Async
+websockets
+numpy
+
+# Audio Processing
+pyaudio
+librosa
+
+# Desktop App (Phase 0)
+rumps
+
+# Structured Logging (Phase 1)
+structlog
+python-json-logger
+
+# Testing Framework (Phase 1)
+pytest
+pytest-asyncio
+pytest-cov
+
+# Configuration Management (Phase 1)
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+python-dotenv>=1.0.0

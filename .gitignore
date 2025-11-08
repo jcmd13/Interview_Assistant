@@ -97,6 +97,7 @@ TRACKING.md
 PHASE_*.md
 
 # Dependency management
-requirements.txt
-requirements-*.txt
+# NOTE: requirements.txt should ALWAYS be tracked!
+# Users need to know what dependencies to install
+# requirements-*.txt  # Uncomment if using multiple requirement files
 ROADMAP.md
