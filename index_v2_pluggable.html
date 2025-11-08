@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Assistant - Main UI (Pluggable)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 8px 14px;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #f0f0f0;
+            transform: translateY(-1px);
+        }
+
+        .layout-selector {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        select {
+            padding: 6px 10px;
+            background: white;
+            color: #333;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .grid-container {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 12px;
+            padding: 12px;
+            overflow: hidden;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            min-height: 0;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+        }
+
+        .card.hidden {
+            display: none;
+        }
+
+        .card-header {
+            padding: 12px;
+            background: #f9f9f9;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .card-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        /* Transcript Card */
+        .transcript-line {
+            padding: 8px;
+            border-left: 2px solid #667eea;
+            margin-bottom: 8px;
+            background: #f9f9f9;
+            border-radius: 3px;
+        }
+
+        .transcript-line:last-child {
+            margin-bottom: 0;
+        }
+
+        .transcript-line.new {
+            background: #f0f7ff;
+            border-left-color: #00a86b;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Answer Detail Card */
+        .answer-content {
+            background: #f9f9f9;
+            padding: 12px;
+            border-radius: 4px;
+            line-height: 1.6;
+            color: #555;
+        }
+
+        .answer-header {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .answer-time {
+            font-size: 11px;
+            color: #999;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        /* Q&A List Card */
+        .qa-item {
+            padding: 8px;
+            margin-bottom: 8px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            border-left: 3px solid #667eea;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .qa-item:hover {
+            background: #f0f7ff;
+            border-left-color: #00a86b;
+        }
+
+        .qa-question {
+            font-weight: 600;
+            font-size: 12px;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .qa-answered {
+            font-size: 11px;
+            color: #00a86b;
+        }
+
+        .qa-pending {
+            font-size: 11px;
+            color: #ff9800;
+        }
+
+        /* Status Card */
+        .status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .status-item {
+            padding: 12px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            border-left: 3px solid #667eea;
+        }
+
+        .status-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .status-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #28a745;
+            margin-right: 4px;
+        }
+
+        .status-indicator.error {
+            background: #dc3545;
+        }
+
+        /* Connection Status (Fixed) */
+        .connection-badge {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 14px;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            z-index: 1000;
+        }
+
+        .connection-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #28a745;
+            animation: pulse 2s infinite;
+        }
+
+        .connection-dot.disconnected {
+            background: #dc3545;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Scrollbar styling */
+        .card-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .card-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .card-content::-webkit-scrollbar-thumb {
+            background: #ddd;
+            border-radius: 3px;
+        }
+
+        .card-content::-webkit-scrollbar-thumb:hover {
+            background: #999;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .grid-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .grid-container {
+                grid-template-columns: 1fr;
+            }
+
+            header {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .layout-selector {
+                width: 100%;
+            }
+
+            select {
+                flex: 1;
+            }
+        }
+
+        .empty-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #999;
+            text-align: center;
+        }
+
+        .empty-state-text {
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-title">🎙️ Interview Assistant</div>
+        <div class="header-controls">
+            <div class="layout-selector">
+                <label for="layout-select" style="color: white; font-size: 12px;">Layout:</label>
+                <select id="layout-select" onchange="changeLayout(this.value)">
+                    <option value="interview_stealth">Interview Stealth (Minimal)</option>
+                    <option value="phone_call">Phone Call (Answer-Focused)</option>
+                    <option value="business_meeting">Business Meeting (Balanced)</option>
+                </select>
+            </div>
+            <button onclick="resetUI()">Reset View</button>
+        </div>
+    </header>
+
+    <div class="grid-container" id="grid-container">
+        <!-- Cards will be dynamically inserted here -->
+    </div>
+
+    <div class="connection-badge" id="connection-badge">
+        <span class="connection-dot" id="connection-dot"></span>
+        <span id="connection-text">Connecting...</span>
+    </div>
+
+    <script>
+        // Global state
+        let ws = null;
+        let isConnected = false;
+        let currentLayout = "interview_stealth";
+        let cards = {};
+        let transcript = [];
+        let currentAnswer = null;
+        let qaList = [];
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            initWebSocket();
+            loadLayout();
+        });
+
+        // WebSocket Connection
+        function initWebSocket() {
+            try {
+                ws = new WebSocket('ws://127.0.0.1:8123');
+
+                ws.onopen = () => {
+                    isConnected = true;
+                    updateConnectionStatus(true);
+                    requestLayoutConfiguration();
+                };
+
+                ws.onmessage = (event) => {
+                    try {
+                        const msg = JSON.parse(event.data);
+                        handleMessage(msg);
+                    } catch (e) {
+                        console.error('Failed to parse message:', e);
+                    }
+                };
+
+                ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    updateConnectionStatus(false);
+                };
+
+                ws.onclose = () => {
+                    isConnected = false;
+                    updateConnectionStatus(false);
+                    // Reconnect after 3 seconds
+                    setTimeout(initWebSocket, 3000);
+                };
+            } catch (e) {
+                console.error('Failed to initialize WebSocket:', e);
+                updateConnectionStatus(false);
+            }
+        }
+
+        function updateConnectionStatus(connected) {
+            const dot = document.getElementById('connection-dot');
+            const text = document.getElementById('connection-text');
+
+            if (connected) {
+                dot.classList.remove('disconnected');
+                text.textContent = 'Connected';
+            } else {
+                dot.classList.add('disconnected');
+                text.textContent = 'Disconnected';
+            }
+        }
+
+        // Message Handlers
+        function handleMessage(msg) {
+            const type = msg.type;
+
+            switch (type) {
+                case 'snapshot':
+                    handleSnapshot(msg);
+                    break;
+                case 'transcript_update':
+                    handleTranscriptUpdate(msg);
+                    break;
+                case 'question_detected':
+                    handleQuestionDetected(msg);
+                    break;
+                case 'answer_generated':
+                    handleAnswerGenerated(msg);
+                    break;
+                default:
+                    console.log('Unknown message type:', type);
+            }
+        }
+
+        function handleSnapshot(msg) {
+            transcript = msg.transcript || [];
+            qaList = msg.qa_log || [];
+            renderCards();
+        }
+
+        function handleTranscriptUpdate(msg) {
+            transcript.push(msg.text);
+            renderTranscriptCard();
+        }
+
+        function handleQuestionDetected(msg) {
+            const question = {
+                question: msg.question,
+                timestamp: msg.timestamp,
+                answered: false,
+            };
+            qaList.push(question);
+            renderQAListCard();
+        }
+
+        function handleAnswerGenerated(msg) {
+            currentAnswer = {
+                question: msg.question,
+                answer: msg.answer,
+                timestamp: msg.timestamp,
+            };
+            // Mark question as answered
+            const qa = qaList.find(q => q.question === msg.question);
+            if (qa) qa.answered = true;
+            renderAnswerCard();
+            renderQAListCard();
+        }
+
+        // Layout Management
+        function requestLayoutConfiguration() {
+            if (isConnected && ws) {
+                ws.send(JSON.stringify({ cmd: 'get_ui_layout' }));
+            }
+        }
+
+        function changeLayout(layoutName) {
+            currentLayout = layoutName;
+            loadLayout();
+            if (isConnected && ws) {
+                ws.send(JSON.stringify({ cmd: 'set_ui_layout', layout: layoutName }));
+            }
+        }
+
+        function loadLayout() {
+            const container = document.getElementById('grid-container');
+            container.innerHTML = '';
+
+            // Get layout configuration
+            const layoutConfigs = {
+                interview_stealth: {
+                    transcript: { col: 1, row: 1, colSpan: 2, rowSpan: 2 },
+                    answer: { col: 3, row: 1, colSpan: 1, rowSpan: 2 },
+                    status: { col: 1, row: 3, colSpan: 3, rowSpan: 1 },
+                },
+                phone_call: {
+                    answer: { col: 1, row: 1, colSpan: 2, rowSpan: 2 },
+                    transcript: { col: 3, row: 1, colSpan: 1, rowSpan: 2 },
+                    qa_list: { col: 1, row: 3, colSpan: 3, rowSpan: 1 },
+                },
+                business_meeting: {
+                    transcript: { col: 1, row: 1, colSpan: 1, rowSpan: 2 },
+                    answer: { col: 2, row: 1, colSpan: 1, rowSpan: 2 },
+                    qa_list: { col: 3, row: 1, colSpan: 1, rowSpan: 2 },
+                    status: { col: 1, row: 3, colSpan: 3, rowSpan: 1 },
+                },
+            };
+
+            const config = layoutConfigs[currentLayout];
+            const cardOrder = Object.keys(config);
+
+            for (const cardId of cardOrder) {
+                const cardConfig = config[cardId];
+                const card = createCard(cardId);
+
+                if (card) {
+                    const style = `
+                        grid-column: ${cardConfig.col} / span ${cardConfig.colSpan};
+                        grid-row: ${cardConfig.row} / span ${cardConfig.rowSpan};
+                    `;
+                    card.setAttribute('style', style);
+                    container.appendChild(card);
+                    cards[cardId] = card;
+                }
+            }
+
+            renderCards();
+        }
+
+        function createCard(cardId) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.id = `card-${cardId}`;
+
+            let title, content;
+
+            switch (cardId) {
+                case 'transcript':
+                    title = '📝 Transcript';
+                    content = '<div class="card-content" id="transcript-content"><div class="empty-state"><div class="empty-state-text">Waiting for audio...</div></div></div>';
+                    break;
+                case 'answer':
+                    title = '💬 Answer Detail';
+                    content = '<div class="card-content" id="answer-content"><div class="empty-state"><div class="empty-state-text">No answer yet</div></div></div>';
+                    break;
+                case 'qa_list':
+                    title = '📋 Q&A History';
+                    content = '<div class="card-content" id="qa-content"><div class="empty-state"><div class="empty-state-text">No questions detected</div></div></div>';
+                    break;
+                case 'status':
+                    title = '🖥️ Status';
+                    content = '<div class="card-content" id="status-content"><div class="status-grid"><div class="status-item"><div class="status-label">Server</div><div class="status-value"><span class="status-indicator"></span>Ready</div></div><div class="status-item"><div class="status-label">Questions</div><div class="status-value" id="question-count">0</div></div></div></div>';
+                    break;
+                default:
+                    return null;
+            }
+
+            card.innerHTML = `
+                <div class="card-header">
+                    <span>${title}</span>
+                    <button onclick="toggleCard('${cardId}')" style="padding: 4px 8px; font-size: 11px;">Hide</button>
+                </div>
+                ${content}
+            `;
+
+            return card;
+        }
+
+        // Card Rendering
+        function renderCards() {
+            renderTranscriptCard();
+            renderAnswerCard();
+            renderQAListCard();
+        }
+
+        function renderTranscriptCard() {
+            const content = document.getElementById('transcript-content');
+            if (!content) return;
+
+            if (transcript.length === 0) {
+                content.innerHTML = '<div class="empty-state"><div class="empty-state-text">Waiting for audio...</div></div>';
+                return;
+            }
+
+            content.innerHTML = transcript.map((line, index) => `
+                <div class="transcript-line ${index === transcript.length - 1 ? 'new' : ''}">
+                    ${line}
+                </div>
+            `).join('');
+
+            // Auto-scroll to bottom
+            content.scrollTop = content.scrollHeight;
+        }
+
+        function renderAnswerCard() {
+            const content = document.getElementById('answer-content');
+            if (!content) return;
+
+            if (!currentAnswer) {
+                content.innerHTML = '<div class="empty-state"><div class="empty-state-text">No answer yet</div></div>';
+                return;
+            }
+
+            content.innerHTML = `
+                <div class="answer-content">
+                    <div class="answer-header">Q: ${currentAnswer.question}</div>
+                    <div>${currentAnswer.answer}</div>
+                    <div class="answer-time">${new Date(currentAnswer.timestamp * 1000).toLocaleTimeString()}</div>
+                </div>
+            `;
+        }
+
+        function renderQAListCard() {
+            const content = document.getElementById('qa-content');
+            if (!content) return;
+
+            if (qaList.length === 0) {
+                content.innerHTML = '<div class="empty-state"><div class="empty-state-text">No questions detected</div></div>';
+                document.getElementById('question-count').textContent = '0';
+                return;
+            }
+
+            content.innerHTML = qaList.map((qa, index) => `
+                <div class="qa-item" onclick="selectAnswer(${index})">
+                    <div class="qa-question">${qa.question}</div>
+                    <div class="${qa.answered ? 'qa-answered' : 'qa-pending'}">
+                        ${qa.answered ? '✓ Answered' : '⏳ Pending'}
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('question-count').textContent = qaList.length;
+        }
+
+        function selectAnswer(index) {
+            if (index < qaList.length) {
+                // In a real implementation, would fetch the answer for this question
+                const qa = qaList[index];
+                currentAnswer = {
+                    question: qa.question,
+                    answer: 'Answer would appear here...',
+                    timestamp: qa.timestamp,
+                };
+                renderAnswerCard();
+            }
+        }
+
+        function toggleCard(cardId) {
+            const card = document.getElementById(`card-${cardId}`);
+            if (card) {
+                card.classList.toggle('hidden');
+            }
+        }
+
+        function resetUI() {
+            transcript = [];
+            currentAnswer = null;
+            qaList = [];
+            if (isConnected && ws) {
+                ws.send(JSON.stringify({ cmd: 'reset' }));
+            }
+            renderCards();
+        }
+
+        // Cleanup on unload
+        window.addEventListener('beforeunload', () => {
+            if (ws) {
+                ws.close();
+            }
+        });
+    </script>
+</body>
+</html>
