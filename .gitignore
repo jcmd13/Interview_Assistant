@@ -22,6 +22,9 @@ build/
 # IDE & Editor
 .vscode/
 .idea/
+.amazonq/
+.kiro/
+.github/
 *.swp
 *.swo
 *.iml
