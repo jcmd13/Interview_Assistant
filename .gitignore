@@ -95,3 +95,8 @@ PROJECT_STATUS.md
 PROGRESS.md
 TRACKING.md
 PHASE_*.md
+
+# Dependency management
+requirements.txt
+requirements-*.txt
+ROADMAP.md
