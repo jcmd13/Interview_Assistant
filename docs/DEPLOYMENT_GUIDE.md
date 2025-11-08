@@ -158,24 +158,59 @@ python --version  # Should be 3.8+
 
 #### Reset Virtual Environment (Start Over)
 
-If you need to remove the venv and start fresh:
+If you need to remove the venv and start completely fresh:
+
+**IMPORTANT: Make sure you are in the project directory!**
 
 ```bash
-# First, deactivate if currently active (you'll see (venv) in prompt)
+# Step 1: Navigate to project directory
+cd /path/to/Interview_Assistant
+
+# Step 2: If venv is ACTIVE (you see (venv) in prompt), deactivate it
+# ONLY type this if your prompt shows (venv):
 deactivate
 
-# Remove the entire venv directory
-rm -rf venv  # macOS/Linux
-# or
-rmdir /s venv  # Windows (with /s for recursive)
+# Step 3: Remove the entire venv directory
+# macOS/Linux:
+rm -rf venv
 
-# Verify it's gone
-ls -la | grep venv  # Should return nothing
+# Windows (PowerShell):
+Remove-Item -Recurse -Force venv
 
-# Now create a fresh venv and continue with Step 4
+# Windows (Command Prompt):
+rmdir /s /q venv
+
+# Step 4: Verify it's gone
+ls -la | grep venv  # macOS/Linux - should return nothing
+dir | findstr venv  # Windows - should return nothing
+
+# Step 5: Create a FRESH venv from scratch
 python3 -m venv venv
-source venv/bin/activate  # macOS/Linux or .\venv\Scripts\activate on Windows
+
+# Step 6: ACTIVATE the new venv (choose your platform)
+# macOS/Linux - type exactly this:
+source venv/bin/activate
+
+# Windows PowerShell - type exactly this:
+.\venv\Scripts\Activate.ps1
+
+# Windows Command Prompt - type exactly this:
+venv\Scripts\activate.bat
+
+# You should now see (venv) at the start of your terminal prompt
+
+# Step 7: Continue with Step 4 of installation
+pip install --upgrade pip
+pip install -r requirements.txt
 ```
+
+**How to tell if activation worked:**
+Your terminal prompt should show `(venv)` at the beginning.
+
+**Troubleshooting:**
+- If you get "command not found", make sure you're in the project directory
+- Copy-paste the activation command exactly (don't type it manually)
+- On macOS/Linux, use `source` not `bash` or `.`
 
 ### Step 4: Install Python Dependencies
 

@@ -139,33 +139,67 @@ Real-time indicators for:
 
 If you need to remove the venv and start completely fresh (following the setup instructions from scratch):
 
+**IMPORTANT: Make sure you are in the project directory first!**
+
 ```bash
-# Step 1: If venv is currently active, deactivate it
+# Navigate to project directory (if not already there)
+cd /path/to/Interview_Assistant
+
+# Step 1: If venv is currently ACTIVE (you see (venv) in your prompt), deactivate it
+# ONLY type this if your prompt shows (venv):
 deactivate
 
 # Step 2: Remove the entire venv directory
-rm -rf venv  # macOS/Linux
-# or
-rmdir /s venv  # Windows
+# macOS/Linux:
+rm -rf venv
 
-# Step 3: Verify it's gone
-ls -la | grep venv  # Should return nothing
+# Windows (PowerShell):
+Remove-Item -Recurse -Force venv
 
-# Step 4: Create a fresh venv
+# Windows (Command Prompt):
+rmdir /s /q venv
+
+# Step 3: Verify it's gone (should return nothing)
+ls -la | grep venv  # macOS/Linux
+dir | findstr venv  # Windows
+
+# Step 4: Create a FRESH venv from scratch
 python3 -m venv venv
 
-# Step 5: Activate the new venv
-source venv/bin/activate  # macOS/Linux
-# or
-.\venv\Scripts\activate   # Windows
+# Step 5: ACTIVATE the new venv
+# macOS/Linux - type exactly this:
+source venv/bin/activate
 
-# Step 6: Install dependencies
+# Windows PowerShell - type exactly this:
+.\venv\Scripts\Activate.ps1
+
+# Windows Command Prompt - type exactly this:
+venv\Scripts\activate.bat
+
+# You should now see (venv) at the start of your prompt
+
+# Step 6: Upgrade pip (optional but recommended)
+pip install --upgrade pip
+
+# Step 7: Install ALL dependencies
 pip install -r requirements.txt
 
-# Step 7: You can now follow the Quick Start steps again
+# Step 8: You can now follow the Quick Start steps again
+python server_v4_pluggable.py
 ```
 
-This gives you a clean environment with all dependencies freshly installed.
+**Troubleshooting activation:**
+
+If you get "permission denied" or "command not found" errors:
+- Make sure you're in the project directory: `pwd` should show `.../Interview_Assistant`
+- Make sure `venv` directory exists: `ls -la` should show `venv` folder
+- Copy-paste the activation command exactly (don't retype it manually)
+- On macOS/Linux, make sure you use `source` (not `.` or `bash`)
+
+**How to tell if venv is active:**
+Your terminal prompt should look like: `(venv) john@Johns-MacBook-Air Interview_Assistant %`
+
+If you DON'T see `(venv)` at the start, the venv is NOT active and you need to run the activation command again.
 
 ---
 
