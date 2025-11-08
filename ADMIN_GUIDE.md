@@ -7,10 +7,22 @@
 
 ## Quick Start
 
+### 0. Activate Virtual Environment (First Time)
+
+```bash
+# Terminal 1: Activate Python virtual environment
+source venv/bin/activate  # macOS/Linux
+# or
+.\venv\Scripts\activate   # Windows
+
+# You should see (venv) in your prompt
+```
+
 ### 1. Start the Plugin-Aware Server
 
 ```bash
 # Terminal 1: Run the new modular server with plugin support
+# (Make sure virtual environment is activated first!)
 python server_v4_pluggable.py
 
 # Server logs will show:
@@ -30,7 +42,10 @@ http://127.0.0.1:8123/admin.html
 ### 3. Start Menu Bar App (macOS)
 
 ```bash
-# Terminal 2: Install rumps first (if needed)
+# Terminal 2: Activate virtual environment (if not already active)
+source venv/bin/activate
+
+# Install rumps first (if needed)
 pip install rumps
 
 # Run the menu bar app
